@@ -1,12 +1,18 @@
-import sharp from 'sharp';
 import { anthropic } from '@/lib/anthropic';
 import { VISION_PROMPT } from '@/lib/prompts';
 import type { ApiResponse, VisionTagResult } from '@/lib/types';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const heicConvert = require('heic-convert') as (opts: {
+  buffer: Buffer;
+  format: 'JPEG' | 'PNG';
+  quality?: number;
+}) => Promise<ArrayBuffer>;
+
 const HEIC_TYPES = new Set(['image/heic', 'image/heif']);
 
 async function toJpeg(buffer: Buffer): Promise<Buffer> {
-  return sharp(buffer).jpeg({ quality: 90 }).toBuffer();
+  return Buffer.from(await heicConvert({ buffer, format: 'JPEG', quality: 0.9 }));
 }
 
 export async function POST(request: Request): Promise<Response> {
