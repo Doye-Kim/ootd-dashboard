@@ -85,7 +85,6 @@ export default function FilterDashboard({ wardrobe, taste }: Props) {
         const json = await res.json();
         if (!cancelled && 'data' in json) {
           setWeatherInfo(json.data);
-          setWeatherConditions([json.data.condition]);
         }
       } catch {
         // 날씨 조회 실패 시 칩 그대로 유지
