@@ -132,35 +132,29 @@ async function extractExif(
 }
 
 function wmoToCondition(code: number): WeatherCondition {
-  if (code === 0) return 'SUNNY';
-  if (code <= 3) return 'CLOUDY';
-  if (code <= 48) return 'CLOUDY';
-  if (code <= 67) return 'RAINY';
-  if (code <= 77) return 'SNOWY';
-  if (code <= 82) return 'RAINY';
-  if (code <= 86) return 'SNOWY';
-  return 'RAINY';
+  if (code <= 48) return 'OTHER';
+  return 'PRECIPITATION';
 }
 
 async function fetchHistoricalWeather(
   lat: number,
   lon: number,
   date: string,
-): Promise<{ temp: number | null; condition: WeatherCondition | null }> {
+): Promise<Weather> {
   try {
     const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${date}&end_date=${date}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
     const res = await fetch(url);
-    if (!res.ok) return { temp: null, condition: null };
+    if (!res.ok) return { temp: null, condition: [] };
     const json = await res.json();
     const max: number = json.daily.temperature_2m_max[0];
     const min: number = json.daily.temperature_2m_min[0];
     const code: number = json.daily.weathercode[0];
     return {
       temp: Math.round((max + min) / 2),
-      condition: wmoToCondition(code),
+      condition: [wmoToCondition(code)],
     };
   } catch {
-    return { temp: null, condition: null };
+    return { temp: null, condition: [] };
   }
 }
 
@@ -207,7 +201,7 @@ export async function prepareUpload(
     const weather: Weather =
       exif.date !== null
         ? await fetchHistoricalWeather(lat, lon, exif.date)
-        : { temp: null, condition: null };
+        : { temp: null, condition: [] };
     return {
       ok: true,
       imagePath,

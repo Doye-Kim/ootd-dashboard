@@ -2,7 +2,7 @@ export type Mood = 'CASUAL' | 'FORMAL' | 'DATE';
 export type Luggage = 'LIGHT' | 'NORMAL' | 'HEAVY';
 export type ColorTone = 'WARM' | 'COOL' | 'NEUTRAL' | 'COLORFUL' | 'MONOCHROME';
 export type SeasonFeel = 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER';
-export type WeatherCondition = 'SUNNY' | 'CLOUDY' | 'RAINY' | 'SNOWY';
+export type WeatherCondition = 'PRECIPITATION' | 'OTHER';
 
 export type WardrobeEntry = {
   id: string;
@@ -10,7 +10,7 @@ export type WardrobeEntry = {
   imagePath: string;
   weather: {
     temp: number | null;
-    condition: WeatherCondition | null;
+    condition: WeatherCondition[];
   };
   mood: Mood[];
   luggage: Luggage[];
@@ -28,7 +28,7 @@ export type TasteEntry = {
 
 export type Weather = {
   temp: number | null;
-  condition: WeatherCondition | null;
+  condition: WeatherCondition[];
 };
 
 export type VisionTagResult = {

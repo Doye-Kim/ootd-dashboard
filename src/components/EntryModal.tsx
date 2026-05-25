@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { MOOD_LABELS, LUGGAGE_LABELS, COLOR_LABELS, SEASON_LABELS, WEATHER_LABELS } from '@/lib/labels';
 import type {
   WardrobeEntry, TasteEntry,
   Mood, Luggage, ColorTone, SeasonFeel, WeatherCondition,
@@ -14,12 +15,6 @@ type Props = {
   onClose: () => void;
   onDelete?: () => Promise<void>;
 };
-
-const MOOD_LABELS: Record<Mood, string> = { CASUAL: '캐주얼', FORMAL: '포멀', DATE: '데이트' };
-const LUGGAGE_LABELS: Record<Luggage, string> = { LIGHT: '가벼움', NORMAL: '보통', HEAVY: '무거움' };
-const COLOR_LABELS: Record<ColorTone, string> = { WARM: '웜', COOL: '쿨', NEUTRAL: '뉴트럴', COLORFUL: '컬러풀', MONOCHROME: '모노크롬' };
-const SEASON_LABELS: Record<SeasonFeel, string> = { SPRING: '봄', SUMMER: '여름', AUTUMN: '가을', WINTER: '겨울' };
-const WEATHER_LABELS: Record<WeatherCondition, string> = { SUNNY: '맑음', CLOUDY: '흐림', RAINY: '비', SNOWY: '눈' };
 
 function MultiChips<T extends string>({
   options, selected, labels, onChange,
@@ -51,33 +46,6 @@ function MultiChips<T extends string>({
   );
 }
 
-function SingleChips<T extends string>({
-  options, selected, labels, onChange,
-}: {
-  options: T[];
-  selected: T | null;
-  labels: Record<T, string>;
-  onChange: (next: T | null) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {options.map((v) => (
-        <button
-          key={v}
-          type="button"
-          onClick={() => onChange(selected === v ? null : v)}
-          className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-            selected === v
-              ? 'bg-gray-900 text-white border-gray-900'
-              : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-          }`}
-        >
-          {labels[v]}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 export default function EntryModal({ type, mode, entry, onSave, onClose, onDelete }: Props) {
   const isWardrobe = type === 'wardrobe';
@@ -88,7 +56,7 @@ export default function EntryModal({ type, mode, entry, onSave, onClose, onDelet
   const [seasonFeel, setSeasonFeel] = useState<SeasonFeel[]>(entry.seasonFeel);
   const [luggage, setLuggage] = useState<Luggage[]>(w?.luggage ?? []);
   const [date, setDate] = useState(w?.date ?? new Date().toISOString().split('T')[0]);
-  const [weatherCondition, setWeatherCondition] = useState<WeatherCondition | null>(w?.weather.condition ?? null);
+  const [weatherCondition, setWeatherCondition] = useState<WeatherCondition[]>(w?.weather.condition ?? []);
   const [weatherTemp, setWeatherTemp] = useState(w?.weather.temp != null ? String(w.weather.temp) : '');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -201,8 +169,8 @@ export default function EntryModal({ type, mode, entry, onSave, onClose, onDelet
           {isWardrobe && (
             <div>
               <p className="text-xs text-gray-400 mb-1.5">날씨</p>
-              <SingleChips
-                options={['SUNNY', 'CLOUDY', 'RAINY', 'SNOWY'] as WeatherCondition[]}
+              <MultiChips
+                options={['PRECIPITATION', 'OTHER'] as WeatherCondition[]}
                 selected={weatherCondition}
                 labels={WEATHER_LABELS}
                 onChange={setWeatherCondition}
