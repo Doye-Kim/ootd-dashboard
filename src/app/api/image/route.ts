@@ -2,7 +2,8 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import type { NextRequest } from 'next/server';
 
-const DATA_PATH = process.env.DATA_PATH!;
+if (!process.env.DATA_PATH) throw new Error('DATA_PATH 환경변수가 설정되지 않았습니다.');
+const DATA_PATH = process.env.DATA_PATH;
 
 const ALLOWED_TYPES = new Set(['wardrobe', 'taste']);
 const MIME: Record<string, string> = {

@@ -12,6 +12,7 @@ import type {
   WardrobeEntry,
   TasteEntry,
   VisionTagResult,
+  Weather,
   WeatherCondition,
 } from '@/lib/types';
 
@@ -173,8 +174,6 @@ function imagePathToFilePath(
 }
 
 type ActionResult = { ok: true } | { ok: false; error: string };
-
-type Weather = { temp: number | null; condition: WeatherCondition | null };
 
 export async function prepareUpload(
   formData: FormData,

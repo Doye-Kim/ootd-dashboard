@@ -26,6 +26,11 @@ export type TasteEntry = {
   seasonFeel: SeasonFeel[];
 };
 
+export type Weather = {
+  temp: number | null;
+  condition: WeatherCondition | null;
+};
+
 export type VisionTagResult = {
   mood: Mood[];
   colorTone: ColorTone[];

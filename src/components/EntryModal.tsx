@@ -103,28 +103,34 @@ export default function EntryModal({ type, mode, entry, onSave, onClose, onDelet
 
   const handleSave = async () => {
     setIsSaving(true);
-    const base = { mood, colorTone, seasonFeel };
-    const updated: WardrobeEntry | TasteEntry = isWardrobe
-      ? {
-          ...(entry as WardrobeEntry),
-          ...base,
-          luggage,
-          date,
-          weather: {
-            temp: weatherTemp !== '' ? Number(weatherTemp) : null,
-            condition: weatherCondition,
-          },
-        }
-      : { ...(entry as TasteEntry), ...base };
-    await onSave(updated);
-    setIsSaving(false);
+    try {
+      const base = { mood, colorTone, seasonFeel };
+      const updated: WardrobeEntry | TasteEntry = isWardrobe
+        ? {
+            ...(entry as WardrobeEntry),
+            ...base,
+            luggage,
+            date,
+            weather: {
+              temp: weatherTemp !== '' ? Number(weatherTemp) : null,
+              condition: weatherCondition,
+            },
+          }
+        : { ...(entry as TasteEntry), ...base };
+      await onSave(updated);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async () => {
     if (!onDelete) return;
     setIsDeleting(true);
-    await onDelete();
-    setIsDeleting(false);
+    try {
+      await onDelete();
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (

@@ -2,9 +2,7 @@
 
 import { useRef, useTransition } from 'react';
 import { prepareUpload } from '@/app/actions';
-import type { VisionTagResult, WeatherCondition } from '@/lib/types';
-
-type Weather = { temp: number | null; condition: WeatherCondition | null };
+import type { VisionTagResult, Weather } from '@/lib/types';
 
 type Props = {
   type: 'wardrobe' | 'taste';

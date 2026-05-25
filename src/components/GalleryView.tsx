@@ -11,9 +11,7 @@ import {
   deleteWardrobeEntry, deleteTasteEntry,
   cancelUpload,
 } from '@/app/actions';
-import type { WardrobeEntry, TasteEntry, VisionTagResult, WeatherCondition } from '@/lib/types';
-
-type Weather = { temp: number | null; condition: WeatherCondition | null };
+import type { WardrobeEntry, TasteEntry, VisionTagResult, Weather } from '@/lib/types';
 
 type ModalState = { mode: 'upload' | 'edit'; entry: WardrobeEntry | TasteEntry } | null;
 
