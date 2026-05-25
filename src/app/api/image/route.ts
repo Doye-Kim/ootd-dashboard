@@ -26,11 +26,12 @@ export async function GET(request: NextRequest): Promise<Response> {
   const filename = path.basename(file);
   const filePath = path.join(DATA_PATH, type, filename);
 
-  const buffer = await readFile(filePath);
-  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
-  const contentType = MIME[ext] ?? 'application/octet-stream';
-
-  return new Response(buffer, {
-    headers: { 'Content-Type': contentType },
-  });
+  try {
+    const buffer = await readFile(filePath);
+    const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+    const contentType = MIME[ext] ?? 'application/octet-stream';
+    return new Response(buffer, { headers: { 'Content-Type': contentType } });
+  } catch {
+    return new Response('Not Found', { status: 404 });
+  }
 }

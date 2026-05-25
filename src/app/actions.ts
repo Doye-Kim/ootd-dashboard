@@ -4,9 +4,10 @@ import path from 'path';
 import exifr from 'exifr';
 import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
-import { writeFile, readFile, mkdir, unlink } from 'fs/promises';
+import { writeFile, mkdir, unlink } from 'fs/promises';
 import { VISION_PROMPT } from '@/lib/prompts';
 import { anthropic } from '@/lib/anthropic';
+import { readJson, writeJson } from '@/lib/data';
 import type {
   WardrobeEntry,
   TasteEntry,
@@ -22,9 +23,23 @@ const heicConvert = require('heic-convert') as (opts: {
   quality?: number;
 }) => Promise<ArrayBuffer>;
 
-const DATA_PATH = process.env.DATA_PATH!;
-const DATA_DIR = path.join(process.cwd(), 'src/data/analysis');
+if (!process.env.DATA_PATH) throw new Error('DATA_PATH 환경변수가 설정되지 않았습니다.');
+const DATA_PATH = process.env.DATA_PATH;
 const HEIC_TYPES = new Set(['image/heic', 'image/heif']);
+
+const locks: Record<string, Promise<void>> = {};
+
+async function withFileLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const prev = locks[key] ?? Promise.resolve();
+  let release!: () => void;
+  locks[key] = new Promise<void>((r) => { release = r; });
+  try {
+    await prev;
+    return await fn();
+  } finally {
+    release();
+  }
+}
 
 function isHeic(file: File): boolean {
   return (
@@ -75,6 +90,7 @@ async function analyzeImage(file: File): Promise<VisionTagResult> {
 
   const text =
     message.content[0].type === 'text' ? message.content[0].text.trim() : '';
+  if (!text) throw new Error('AI 응답이 비어 있습니다.');
   return JSON.parse(text);
 }
 
@@ -156,23 +172,6 @@ function imagePathToFilePath(
   return path.join(DATA_PATH, type, path.basename(filename));
 }
 
-async function readJson<T>(filename: string): Promise<T[]> {
-  try {
-    const content = await readFile(path.join(DATA_DIR, filename), 'utf-8');
-    return content.trim() ? JSON.parse(content) : [];
-  } catch {
-    return [];
-  }
-}
-
-async function writeJson<T>(filename: string, data: T[]): Promise<void> {
-  await writeFile(
-    path.join(DATA_DIR, filename),
-    JSON.stringify(data, null, 2),
-    'utf-8',
-  );
-}
-
 type ActionResult = { ok: true } | { ok: false; error: string };
 
 type Weather = { temp: number | null; condition: WeatherCondition | null };
@@ -190,9 +189,10 @@ export async function prepareUpload(
     }
   | { ok: false; error: string }
 > {
+  let imagePath: string | undefined;
   try {
     const file = formData.get('image') as File;
-    const [tagsResult, imagePath, exif] = await Promise.all([
+    const [tagsResult, savedPath, exif] = await Promise.all([
       analyzeImage(file)
         .then((tags) => ({ ok: true as const, tags }))
         .catch(() => ({
@@ -202,6 +202,7 @@ export async function prepareUpload(
       saveImageToDisk(file, type),
       extractExif(file),
     ]);
+    imagePath = savedPath;
     const lat = exif.lat ?? 35.1796;
     const lon = exif.lon ?? 129.0756;
     const weather: Weather =
@@ -216,6 +217,7 @@ export async function prepareUpload(
       weather,
     };
   } catch (e) {
+    if (imagePath) await unlink(imagePathToFilePath(imagePath, type)).catch(() => {});
     return {
       ok: false,
       error: e instanceof Error ? e.message : '이미지 저장에 실패했습니다.',
@@ -227,11 +229,13 @@ export async function saveWardrobeEntry(
   entry: WardrobeEntry,
 ): Promise<ActionResult> {
   try {
-    const entries = await readJson<WardrobeEntry>('wardrobe.json');
-    entries.unshift(entry);
-    await writeJson('wardrobe.json', entries);
-    revalidatePath('/wardrobe');
-    return { ok: true };
+    return await withFileLock('wardrobe', async () => {
+      const entries = await readJson<WardrobeEntry>('wardrobe.json');
+      entries.unshift(entry);
+      await writeJson('wardrobe.json', entries);
+      revalidatePath('/wardrobe');
+      return { ok: true };
+    });
   } catch (e) {
     return {
       ok: false,
@@ -242,11 +246,13 @@ export async function saveWardrobeEntry(
 
 export async function saveTasteEntry(entry: TasteEntry): Promise<ActionResult> {
   try {
-    const entries = await readJson<TasteEntry>('taste.json');
-    entries.unshift(entry);
-    await writeJson('taste.json', entries);
-    revalidatePath('/taste');
-    return { ok: true };
+    return await withFileLock('taste', async () => {
+      const entries = await readJson<TasteEntry>('taste.json');
+      entries.unshift(entry);
+      await writeJson('taste.json', entries);
+      revalidatePath('/taste');
+      return { ok: true };
+    });
   } catch (e) {
     return {
       ok: false,
@@ -259,13 +265,15 @@ export async function updateWardrobeEntry(
   entry: WardrobeEntry,
 ): Promise<ActionResult> {
   try {
-    const entries = await readJson<WardrobeEntry>('wardrobe.json');
-    const idx = entries.findIndex((e) => e.id === entry.id);
-    if (idx === -1) return { ok: false, error: '항목을 찾을 수 없습니다.' };
-    entries[idx] = entry;
-    await writeJson('wardrobe.json', entries);
-    revalidatePath('/wardrobe');
-    return { ok: true };
+    return await withFileLock('wardrobe', async () => {
+      const entries = await readJson<WardrobeEntry>('wardrobe.json');
+      const idx = entries.findIndex((e) => e.id === entry.id);
+      if (idx === -1) return { ok: false, error: '항목을 찾을 수 없습니다.' };
+      entries[idx] = entry;
+      await writeJson('wardrobe.json', entries);
+      revalidatePath('/wardrobe');
+      return { ok: true };
+    });
   } catch (e) {
     return {
       ok: false,
@@ -278,13 +286,15 @@ export async function updateTasteEntry(
   entry: TasteEntry,
 ): Promise<ActionResult> {
   try {
-    const entries = await readJson<TasteEntry>('taste.json');
-    const idx = entries.findIndex((e) => e.id === entry.id);
-    if (idx === -1) return { ok: false, error: '항목을 찾을 수 없습니다.' };
-    entries[idx] = entry;
-    await writeJson('taste.json', entries);
-    revalidatePath('/taste');
-    return { ok: true };
+    return await withFileLock('taste', async () => {
+      const entries = await readJson<TasteEntry>('taste.json');
+      const idx = entries.findIndex((e) => e.id === entry.id);
+      if (idx === -1) return { ok: false, error: '항목을 찾을 수 없습니다.' };
+      entries[idx] = entry;
+      await writeJson('taste.json', entries);
+      revalidatePath('/taste');
+      return { ok: true };
+    });
   } catch (e) {
     return {
       ok: false,
@@ -298,14 +308,16 @@ export async function deleteWardrobeEntry(
   imagePath: string,
 ): Promise<ActionResult> {
   try {
-    const entries = await readJson<WardrobeEntry>('wardrobe.json');
-    await writeJson(
-      'wardrobe.json',
-      entries.filter((e) => e.id !== id),
-    );
-    await unlink(imagePathToFilePath(imagePath, 'wardrobe')).catch(() => {});
-    revalidatePath('/wardrobe');
-    return { ok: true };
+    return await withFileLock('wardrobe', async () => {
+      const entries = await readJson<WardrobeEntry>('wardrobe.json');
+      await writeJson(
+        'wardrobe.json',
+        entries.filter((e) => e.id !== id),
+      );
+      await unlink(imagePathToFilePath(imagePath, 'wardrobe')).catch(() => {});
+      revalidatePath('/wardrobe');
+      return { ok: true };
+    });
   } catch (e) {
     return {
       ok: false,
@@ -319,14 +331,16 @@ export async function deleteTasteEntry(
   imagePath: string,
 ): Promise<ActionResult> {
   try {
-    const entries = await readJson<TasteEntry>('taste.json');
-    await writeJson(
-      'taste.json',
-      entries.filter((e) => e.id !== id),
-    );
-    await unlink(imagePathToFilePath(imagePath, 'taste')).catch(() => {});
-    revalidatePath('/taste');
-    return { ok: true };
+    return await withFileLock('taste', async () => {
+      const entries = await readJson<TasteEntry>('taste.json');
+      await writeJson(
+        'taste.json',
+        entries.filter((e) => e.id !== id),
+      );
+      await unlink(imagePathToFilePath(imagePath, 'taste')).catch(() => {});
+      revalidatePath('/taste');
+      return { ok: true };
+    });
   } catch (e) {
     return {
       ok: false,

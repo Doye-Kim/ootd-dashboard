@@ -94,10 +94,12 @@ export default function EntryModal({ type, mode, entry, onSave, onClose, onDelet
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSaving && !isDeleting) onClose();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [onClose, isSaving, isDeleting]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -128,11 +130,11 @@ export default function EntryModal({ type, mode, entry, onSave, onClose, onDelet
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget && !isSaving && !isDeleting) onClose(); }}
     >
       <div className="bg-white rounded-xl w-full max-w-sm mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="aspect-square bg-gray-100 rounded-t-xl overflow-hidden">
-          <img src={entry.imagePath} alt="" className="w-full h-full object-cover" />
+        <div className="bg-gray-100 rounded-t-xl overflow-hidden">
+          <img src={entry.imagePath} alt="" className="w-full block" />
         </div>
 
         <div className="p-4 space-y-4">
