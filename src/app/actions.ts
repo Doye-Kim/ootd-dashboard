@@ -4,7 +4,7 @@ import path from 'path';
 import exifr from 'exifr';
 import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
-import { writeFile, mkdir, unlink } from 'fs/promises';
+import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { VISION_PROMPT } from '@/lib/prompts';
 import { anthropic } from '@/lib/anthropic';
 import { readJson, writeJson } from '@/lib/data';
@@ -14,6 +14,7 @@ import type {
   VisionTagResult,
   Weather,
   WeatherCondition,
+  Correction,
 } from '@/lib/types';
 
 // heic-convert has no type declarations
@@ -56,6 +57,35 @@ async function toJpeg(buf: Buffer): Promise<Buffer> {
   );
 }
 
+function tagsChanged(a: VisionTagResult, b: VisionTagResult): boolean {
+  const s = (arr: string[]) => [...arr].sort().join(',');
+  return s(a.mood) !== s(b.mood) || s(a.colorTone) !== s(b.colorTone) || s(a.seasonFeel) !== s(b.seasonFeel);
+}
+
+const CALIBRATION_PATH = path.join(process.cwd(), 'src/data/analysis/calibration.txt');
+
+async function readCalibration(): Promise<string> {
+  try {
+    return (await readFile(CALIBRATION_PATH, 'utf-8')).trim();
+  } catch {
+    return '';
+  }
+}
+
+async function recordCorrection(imagePath: string, corrected: VisionTagResult): Promise<void> {
+  let count = 0;
+  await withFileLock('corrections', async () => {
+    const list = await readJson<Correction>('corrections.json');
+    list.unshift({ imagePath, corrected, timestamp: new Date().toISOString().split('T')[0] });
+    const trimmed = list.slice(0, 20);
+    await writeJson('corrections.json', trimmed);
+    count = trimmed.length;
+  });
+  if (count > 0 && count % 5 === 0) {
+    generateCalibration().catch(() => {});
+  }
+}
+
 async function analyzeImage(file: File): Promise<VisionTagResult> {
   const heic = isHeic(file);
   const raw = Buffer.from((await file.arrayBuffer()) as ArrayBuffer);
@@ -67,6 +97,9 @@ async function analyzeImage(file: File): Promise<VisionTagResult> {
         | 'image/png'
         | 'image/gif'
         | 'image/webp');
+
+  const calibration = await readCalibration();
+  const prompt = calibration ? `${VISION_PROMPT}\n\n[보정 지침]\n${calibration}` : VISION_PROMPT;
 
   const message = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
@@ -83,7 +116,7 @@ async function analyzeImage(file: File): Promise<VisionTagResult> {
               data: buffer.toString('base64'),
             },
           },
-          { type: 'text', text: VISION_PROMPT },
+          { type: 'text', text: prompt },
         ],
       },
     ],
@@ -220,15 +253,22 @@ export async function prepareUpload(
 
 export async function saveWardrobeEntry(
   entry: WardrobeEntry,
+  originalTags?: VisionTagResult,
 ): Promise<ActionResult> {
   try {
-    return await withFileLock('wardrobe', async () => {
+    await withFileLock('wardrobe', async () => {
       const entries = await readJson<WardrobeEntry>('wardrobe.json');
       entries.unshift(entry);
       await writeJson('wardrobe.json', entries);
-      revalidatePath('/wardrobe');
-      return { ok: true };
     });
+    if (originalTags) {
+      const finalTags: VisionTagResult = { mood: entry.mood, colorTone: entry.colorTone, seasonFeel: entry.seasonFeel };
+      if (tagsChanged(originalTags, finalTags)) {
+        await recordCorrection(entry.imagePath, finalTags).catch(() => {});
+      }
+    }
+    revalidatePath('/wardrobe');
+    return { ok: true };
   } catch (e) {
     return {
       ok: false,
@@ -237,15 +277,24 @@ export async function saveWardrobeEntry(
   }
 }
 
-export async function saveTasteEntry(entry: TasteEntry): Promise<ActionResult> {
+export async function saveTasteEntry(
+  entry: TasteEntry,
+  originalTags?: VisionTagResult,
+): Promise<ActionResult> {
   try {
-    return await withFileLock('taste', async () => {
+    await withFileLock('taste', async () => {
       const entries = await readJson<TasteEntry>('taste.json');
       entries.unshift(entry);
       await writeJson('taste.json', entries);
-      revalidatePath('/taste');
-      return { ok: true };
     });
+    if (originalTags) {
+      const finalTags: VisionTagResult = { mood: entry.mood, colorTone: entry.colorTone, seasonFeel: entry.seasonFeel };
+      if (tagsChanged(originalTags, finalTags)) {
+        await recordCorrection(entry.imagePath, finalTags).catch(() => {});
+      }
+    }
+    revalidatePath('/taste');
+    return { ok: true };
   } catch (e) {
     return {
       ok: false,
@@ -347,4 +396,30 @@ export async function cancelUpload(
   type: 'wardrobe' | 'taste',
 ): Promise<void> {
   await unlink(imagePathToFilePath(imagePath, type)).catch(() => {});
+}
+
+export async function generateCalibration(): Promise<ActionResult> {
+  const corrections = await readJson<Correction>('corrections.json');
+  if (corrections.length === 0) return { ok: false, error: '교정 데이터가 없습니다.' };
+
+  const current = await readCalibration();
+
+  const message = await anthropic.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 200,
+    messages: [{
+      role: 'user',
+      content: `아래 교정 이력을 분석해서 코디 사진 태깅 보정 지침을 3줄 이내 한국어로 작성해줘.
+기존 지침: "${current}"
+교정 이력:
+${JSON.stringify(corrections.slice(0, 20), null, 2)}
+→ 기존 지침을 대체할 새 지침만 반환. 설명 없이.`,
+    }],
+  });
+
+  const text = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
+  if (!text) return { ok: false, error: 'AI 응답이 비어 있습니다.' };
+
+  await writeFile(CALIBRATION_PATH, text, 'utf-8');
+  return { ok: true };
 }

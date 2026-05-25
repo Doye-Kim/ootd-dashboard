@@ -1,20 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import ImageGrid from '@/components/ImageGrid';
 import PhotoUploader from '@/components/PhotoUploader';
 import EntryModal from '@/components/EntryModal';
+import { Button } from '@/components/Button';
 import {
   saveWardrobeEntry, saveTasteEntry,
   updateWardrobeEntry, updateTasteEntry,
   deleteWardrobeEntry, deleteTasteEntry,
-  cancelUpload,
+  cancelUpload, generateCalibration,
 } from '@/app/actions';
 import type { WardrobeEntry, TasteEntry, VisionTagResult, Weather } from '@/lib/types';
 import { buildAlt } from '@/lib/utils';
 
-type ModalState = { mode: 'upload' | 'edit'; entry: WardrobeEntry | TasteEntry } | null;
+type ModalState = { mode: 'upload' | 'edit'; entry: WardrobeEntry | TasteEntry; originalTags?: VisionTagResult } | null;
 
 type Props =
   | { type: 'wardrobe'; items: WardrobeEntry[] }
@@ -23,6 +24,7 @@ type Props =
 export default function GalleryView({ type, items }: Props) {
   const router = useRouter();
   const [modal, setModal] = useState<ModalState>(null);
+  const [isCalibrating, startCalibration] = useTransition();
 
   const handleUploadReady = (imagePath: string, tags: VisionTagResult, date: string | null, weather: Weather) => {
     const base = {
@@ -36,7 +38,7 @@ export default function GalleryView({ type, items }: Props) {
       type === 'wardrobe'
         ? { ...base, date: date ?? new Date().toISOString().split('T')[0], weather, luggage: [] }
         : base;
-    setModal({ mode: 'upload', entry });
+    setModal({ mode: 'upload', entry, originalTags: tags });
   };
 
   const handleItemClick = (id: string) => {
@@ -48,8 +50,8 @@ export default function GalleryView({ type, items }: Props) {
     const result =
       modal?.mode === 'upload'
         ? type === 'wardrobe'
-          ? await saveWardrobeEntry(updated as WardrobeEntry)
-          : await saveTasteEntry(updated as TasteEntry)
+          ? await saveWardrobeEntry(updated as WardrobeEntry, modal.originalTags)
+          : await saveTasteEntry(updated as TasteEntry, modal.originalTags)
         : type === 'wardrobe'
           ? await updateWardrobeEntry(updated as WardrobeEntry)
           : await updateTasteEntry(updated as TasteEntry);
@@ -85,7 +87,18 @@ export default function GalleryView({ type, items }: Props) {
 
   return (
     <main>
-      <div className="flex justify-end px-4 py-3 border-b border-gray-200">
+      <div className="flex justify-between px-4 py-3 border-b border-gray-200">
+        <Button
+          variant="outline"
+          className="px-3 text-xs"
+          disabled={isCalibrating}
+          onClick={() => startCalibration(async () => {
+            const result = await generateCalibration();
+            if (!result.ok) alert(result.error);
+          })}
+        >
+          {isCalibrating ? 'AI 학습 중...' : 'AI 학습'}
+        </Button>
         <PhotoUploader type={type} onUploadReady={handleUploadReady} />
       </div>
       <ImageGrid items={gridItems} onItemClick={handleItemClick} />

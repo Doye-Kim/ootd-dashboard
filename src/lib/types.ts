@@ -37,4 +37,10 @@ export type VisionTagResult = {
   seasonFeel: SeasonFeel[];
 };
 
+export type Correction = {
+  imagePath: string;
+  corrected: VisionTagResult;
+  timestamp: string;
+};
+
 export type ApiResponse<T> = { data: T } | { error: string };
