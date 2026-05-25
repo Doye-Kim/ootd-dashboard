@@ -12,17 +12,13 @@ import {
   cancelUpload,
 } from '@/app/actions';
 import type { WardrobeEntry, TasteEntry, VisionTagResult, Weather } from '@/lib/types';
+import { buildAlt } from '@/lib/utils';
 
 type ModalState = { mode: 'upload' | 'edit'; entry: WardrobeEntry | TasteEntry } | null;
 
 type Props =
   | { type: 'wardrobe'; items: WardrobeEntry[] }
   | { type: 'taste'; items: TasteEntry[] };
-
-function buildAlt(entry: WardrobeEntry | TasteEntry): string {
-  const parts = [...entry.mood, ...entry.colorTone, ...entry.seasonFeel];
-  return parts.length > 0 ? `${parts.join(', ')} 코디` : '코디 사진';
-}
 
 export default function GalleryView({ type, items }: Props) {
   const router = useRouter();

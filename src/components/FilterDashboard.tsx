@@ -5,6 +5,7 @@ import ImageGrid from '@/components/ImageGrid';
 import { Chips } from '@/components/Chips';
 import { Button } from '@/components/Button';
 import { MOOD_LABELS, COLOR_LABELS, WEATHER_LABELS, LUGGAGE_LABELS } from '@/lib/labels';
+import { buildAlt } from '@/lib/utils';
 import type {
   WardrobeEntry,
   TasteEntry,
@@ -25,11 +26,6 @@ type AppliedFilters = {
   date: string;
 };
 
-
-function buildAlt(entry: WardrobeEntry | TasteEntry): string {
-  const parts = [...entry.mood, ...entry.colorTone, ...entry.seasonFeel];
-  return parts.length > 0 ? `${parts.join(', ')} 코디` : '코디 사진';
-}
 
 function dateToSeason(dateStr: string): SeasonFeel {
   const month = new Date(dateStr).getMonth() + 1;
