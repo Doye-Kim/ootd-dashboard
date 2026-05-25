@@ -42,3 +42,6 @@ next-env.d.ts
 
 # AI assistant config
 CLAUDE.md
+
+# user data (runtime-generated)
+src/data/analysis/*.json

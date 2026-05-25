@@ -1,10 +1,10 @@
 import { readFile } from 'fs/promises';
 import path from 'path';
 import GalleryView from '@/components/GalleryView';
-import type { OotdEntry } from '@/lib/types';
+import type { WardrobeEntry } from '@/lib/types';
 
 export default async function WardrobePage() {
-  let items: OotdEntry[] = [];
+  let items: WardrobeEntry[] = [];
   try {
     const content = await readFile(
       path.join(process.cwd(), 'src/data/analysis/wardrobe.json'),

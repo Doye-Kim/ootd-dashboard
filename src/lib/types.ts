@@ -4,7 +4,7 @@ export type ColorTone = 'WARM' | 'COOL' | 'NEUTRAL' | 'COLORFUL' | 'MONOCHROME';
 export type SeasonFeel = 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER';
 export type WeatherCondition = 'SUNNY' | 'CLOUDY' | 'RAINY' | 'SNOWY';
 
-export type OotdEntry = {
+export type WardrobeEntry = {
   id: string;
   date: string;
   imagePath: string;
@@ -18,7 +18,7 @@ export type OotdEntry = {
   seasonFeel: SeasonFeel[];
 };
 
-export type PinEntry = {
+export type TasteEntry = {
   id: string;
   imagePath: string;
   mood: Mood[];

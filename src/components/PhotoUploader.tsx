@@ -1,15 +1,19 @@
 'use client';
 
 import { useRef, useTransition } from 'react';
-import { addToWardrobe, addToTaste } from '@/app/actions';
+import { prepareUpload } from '@/app/actions';
+import type { VisionTagResult, WeatherCondition } from '@/lib/types';
 
-type Props = { type: 'wardrobe' | 'taste' };
+type Weather = { temp: number | null; condition: WeatherCondition | null };
 
-export default function PhotoUploader({ type }: Props) {
-  console.log('type', type);
+type Props = {
+  type: 'wardrobe' | 'taste';
+  onUploadReady: (imagePath: string, tags: VisionTagResult, date: string | null, weather: Weather) => void;
+};
+
+export default function PhotoUploader({ type, onUploadReady }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
-  const action = type === 'wardrobe' ? addToWardrobe : addToTaste;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -17,13 +21,12 @@ export default function PhotoUploader({ type }: Props) {
 
     const formData = new FormData();
     formData.append('image', file);
-    console.log(file, formData);
 
     startTransition(async () => {
-      const result = await action(formData);
-      console.log('res', result);
+      const result = await prepareUpload(formData, type);
       if (inputRef.current) inputRef.current.value = '';
-      if (!result.ok) alert(result.error);
+      if (!result.ok) { alert(result.error); return; }
+      onUploadReady(result.imagePath, result.tags, result.date, result.weather);
     });
   };
 
@@ -31,16 +34,17 @@ export default function PhotoUploader({ type }: Props) {
     <>
       <input
         ref={inputRef}
-        type='file'
-        accept='image/*,.heic,.heif'
-        className='hidden'
+        type="file"
+        accept="image/*,.heic,.heif"
+        className="hidden"
         onChange={handleChange}
       />
       <button
         onClick={() => inputRef.current?.click()}
         disabled={isPending}
-        className='px-4 py-2 text-sm border border-gray-300 rounded disabled:opacity-50'>
-        {isPending ? '등록 중...' : '+ 사진 등록'}
+        className="px-4 py-2 text-sm border border-gray-300 rounded disabled:opacity-50"
+      >
+        {isPending ? '분석 중...' : '+ 사진 등록'}
       </button>
     </>
   );

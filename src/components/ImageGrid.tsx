@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 type GridItem = { id: string; imagePath: string; alt: string };
 type Pos = { x: number; y: number; w: number; h: number };
+type Props = { items: GridItem[]; onItemClick?: (id: string) => void };
 
 const GAP = 8;
 const PAD = 8;
@@ -14,7 +15,7 @@ function colCount(width: number): number {
   return 2;
 }
 
-export default function ImageGrid({ items }: { items: GridItem[] }) {
+export default function ImageGrid({ items, onItemClick }: Props) {
   const containerRef = useRef<HTMLUListElement>(null);
   const [positions, setPositions] = useState<Pos[]>([]);
   const [totalHeight, setTotalHeight] = useState(0);
@@ -65,8 +66,9 @@ export default function ImageGrid({ items }: { items: GridItem[] }) {
         return (
           <li
             key={item.id}
-            className="absolute"
+            className={`absolute ${onItemClick ? 'cursor-pointer' : ''}`}
             style={{ transform: `translate3d(${p.x}px, ${p.y}px, 0)`, width: p.w }}
+            onClick={() => onItemClick?.(item.id)}
           >
             {!isLoaded && (
               <div

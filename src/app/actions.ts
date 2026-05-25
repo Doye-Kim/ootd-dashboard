@@ -1,12 +1,18 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { writeFile, readFile, mkdir } from 'fs/promises';
 import path from 'path';
+import exifr from 'exifr';
 import { randomUUID } from 'crypto';
-import { anthropic } from '@/lib/anthropic';
+import { revalidatePath } from 'next/cache';
+import { writeFile, readFile, mkdir, unlink } from 'fs/promises';
 import { VISION_PROMPT } from '@/lib/prompts';
-import type { OotdEntry, PinEntry, VisionTagResult } from '@/lib/types';
+import { anthropic } from '@/lib/anthropic';
+import type {
+  WardrobeEntry,
+  TasteEntry,
+  VisionTagResult,
+  WeatherCondition,
+} from '@/lib/types';
 
 // heic-convert has no type declarations
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -20,18 +26,25 @@ const DATA_PATH = process.env.DATA_PATH!;
 const DATA_DIR = path.join(process.cwd(), 'src/data/analysis');
 const HEIC_TYPES = new Set(['image/heic', 'image/heif']);
 
-async function analyzeImage(file: File): Promise<VisionTagResult> {
-  const isHeic =
+function isHeic(file: File): boolean {
+  return (
     HEIC_TYPES.has(file.type) ||
     file.name.toLowerCase().endsWith('.heic') ||
-    file.name.toLowerCase().endsWith('.heif');
+    file.name.toLowerCase().endsWith('.heif')
+  );
+}
 
-  const rawBuffer = Buffer.from((await file.arrayBuffer()) as ArrayBuffer);
-  const buffer = isHeic
-    ? Buffer.from(await heicConvert({ buffer: rawBuffer, format: 'JPEG', quality: 0.9 }))
-    : rawBuffer;
+async function toJpeg(buf: Buffer): Promise<Buffer> {
+  return Buffer.from(
+    await heicConvert({ buffer: buf, format: 'JPEG', quality: 0.9 }),
+  );
+}
 
-  const mediaType = isHeic
+async function analyzeImage(file: File): Promise<VisionTagResult> {
+  const heic = isHeic(file);
+  const raw = Buffer.from((await file.arrayBuffer()) as ArrayBuffer);
+  const buffer = heic ? await toJpeg(raw) : raw;
+  const mediaType = heic
     ? ('image/jpeg' as const)
     : ((file.type || 'image/jpeg') as
         | 'image/jpeg'
@@ -65,27 +78,82 @@ async function analyzeImage(file: File): Promise<VisionTagResult> {
   return JSON.parse(text);
 }
 
-async function saveImage(
+async function saveImageToDisk(
   file: File,
   type: 'wardrobe' | 'taste',
 ): Promise<string> {
   const dir = path.join(DATA_PATH, type);
   await mkdir(dir, { recursive: true });
 
-  const isHeic =
-    HEIC_TYPES.has(file.type) ||
-    file.name.toLowerCase().endsWith('.heic') ||
-    file.name.toLowerCase().endsWith('.heif');
-
-  const rawBuffer = Buffer.from((await file.arrayBuffer()) as ArrayBuffer);
-  const ext = isHeic ? 'jpg' : file.name.split('.').pop() ?? 'jpg';
-  const buffer = isHeic
-    ? Buffer.from(await heicConvert({ buffer: rawBuffer, format: 'JPEG', quality: 0.9 }))
-    : rawBuffer;
+  const heic = isHeic(file);
+  const raw = Buffer.from((await file.arrayBuffer()) as ArrayBuffer);
+  const ext = heic ? 'jpg' : file.name.split('.').pop() ?? 'jpg';
+  const buffer = heic ? await toJpeg(raw) : raw;
 
   const filename = `${randomUUID()}.${ext}`;
   await writeFile(path.join(dir, filename), buffer);
   return `/api/image?type=${type}&file=${filename}`;
+}
+
+async function extractExif(
+  file: File,
+): Promise<{ date: string | null; lat: number | null; lon: number | null }> {
+  try {
+    const buffer = Buffer.from((await file.arrayBuffer()) as ArrayBuffer);
+    const exif = await exifr.parse(buffer, true);
+    if (!exif) return { date: null, lat: null, lon: null };
+    const date =
+      exif.DateTimeOriginal instanceof Date
+        ? exif.DateTimeOriginal.toISOString().split('T')[0]
+        : null;
+    const lat = typeof exif.latitude === 'number' ? exif.latitude : null;
+    const lon = typeof exif.longitude === 'number' ? exif.longitude : null;
+    return { date, lat, lon };
+  } catch {
+    return { date: null, lat: null, lon: null };
+  }
+}
+
+function wmoToCondition(code: number): WeatherCondition {
+  if (code === 0) return 'SUNNY';
+  if (code <= 3) return 'CLOUDY';
+  if (code <= 48) return 'CLOUDY';
+  if (code <= 67) return 'RAINY';
+  if (code <= 77) return 'SNOWY';
+  if (code <= 82) return 'RAINY';
+  if (code <= 86) return 'SNOWY';
+  return 'RAINY';
+}
+
+async function fetchHistoricalWeather(
+  lat: number,
+  lon: number,
+  date: string,
+): Promise<{ temp: number | null; condition: WeatherCondition | null }> {
+  try {
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${date}&end_date=${date}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
+    const res = await fetch(url);
+    if (!res.ok) return { temp: null, condition: null };
+    const json = await res.json();
+    const max: number = json.daily.temperature_2m_max[0];
+    const min: number = json.daily.temperature_2m_min[0];
+    const code: number = json.daily.weathercode[0];
+    return {
+      temp: Math.round((max + min) / 2),
+      condition: wmoToCondition(code),
+    };
+  } catch {
+    return { temp: null, condition: null };
+  }
+}
+
+function imagePathToFilePath(
+  imagePath: string,
+  type: 'wardrobe' | 'taste',
+): string {
+  const filename =
+    new URL(imagePath, 'http://x').searchParams.get('file') ?? '';
+  return path.join(DATA_PATH, type, path.basename(filename));
 }
 
 async function readJson<T>(filename: string): Promise<T[]> {
@@ -107,83 +175,169 @@ async function writeJson<T>(filename: string, data: T[]): Promise<void> {
 
 type ActionResult = { ok: true } | { ok: false; error: string };
 
-export async function addToWardrobe(formData: FormData): Promise<ActionResult> {
+type Weather = { temp: number | null; condition: WeatherCondition | null };
+
+export async function prepareUpload(
+  formData: FormData,
+  type: 'wardrobe' | 'taste',
+): Promise<
+  | {
+      ok: true;
+      imagePath: string;
+      tags: VisionTagResult;
+      date: string | null;
+      weather: Weather;
+    }
+  | { ok: false; error: string }
+> {
   try {
     const file = formData.get('image') as File;
-
-    const [tagsResult, imagePath] = await Promise.all([
+    const [tagsResult, imagePath, exif] = await Promise.all([
       analyzeImage(file)
         .then((tags) => ({ ok: true as const, tags }))
-        .catch(() => ({ ok: false as const })),
-      saveImage(file, 'wardrobe'),
+        .catch(() => ({
+          ok: false as const,
+          tags: { mood: [], colorTone: [], seasonFeel: [] } as VisionTagResult,
+        })),
+      saveImageToDisk(file, type),
+      extractExif(file),
     ]);
-
-    const tags = tagsResult.ok
-      ? tagsResult.tags
-      : { mood: [], colorTone: [], seasonFeel: [] };
-
-    const entry: OotdEntry = {
-      id: randomUUID(),
-      date: new Date().toISOString().split('T')[0],
+    const lat = exif.lat ?? 35.1796;
+    const lon = exif.lon ?? 129.0756;
+    const weather: Weather =
+      exif.date !== null
+        ? await fetchHistoricalWeather(lat, lon, exif.date)
+        : { temp: null, condition: null };
+    return {
+      ok: true,
       imagePath,
-      weather: { temp: null, condition: null },
-      mood: tags.mood,
-      luggage: [],
-      colorTone: tags.colorTone,
-      seasonFeel: tags.seasonFeel,
+      tags: tagsResult.tags,
+      date: exif.date,
+      weather,
     };
-
-    const entries = await readJson<OotdEntry>('wardrobe.json');
-    entries.unshift(entry);
-    await writeJson('wardrobe.json', entries);
-    revalidatePath('/');
-
-    if (!tagsResult.ok)
-      return { ok: false, error: 'AI 분석 실패 — 태그 없이 저장했습니다.' };
-    return { ok: true };
   } catch (e) {
     return {
       ok: false,
-      error: e instanceof Error ? e.message : '이미지 등록에 실패했습니다.',
+      error: e instanceof Error ? e.message : '이미지 저장에 실패했습니다.',
     };
   }
 }
 
-export async function addToTaste(formData: FormData): Promise<ActionResult> {
+export async function saveWardrobeEntry(
+  entry: WardrobeEntry,
+): Promise<ActionResult> {
   try {
-    const file = formData.get('image') as File;
-
-    const [tagsResult, imagePath] = await Promise.all([
-      analyzeImage(file)
-        .then((tags) => ({ ok: true as const, tags }))
-        .catch(() => ({ ok: false as const })),
-      saveImage(file, 'taste'),
-    ]);
-
-    const tags = tagsResult.ok
-      ? tagsResult.tags
-      : { mood: [], colorTone: [], seasonFeel: [] };
-
-    const entry: PinEntry = {
-      id: randomUUID(),
-      imagePath,
-      mood: tags.mood,
-      colorTone: tags.colorTone,
-      seasonFeel: tags.seasonFeel,
-    };
-
-    const entries = await readJson<PinEntry>('taste.json');
+    const entries = await readJson<WardrobeEntry>('wardrobe.json');
     entries.unshift(entry);
-    await writeJson('taste.json', entries);
-    revalidatePath('/');
-
-    if (!tagsResult.ok)
-      return { ok: false, error: 'AI 분석 실패 — 태그 없이 저장했습니다.' };
+    await writeJson('wardrobe.json', entries);
+    revalidatePath('/wardrobe');
     return { ok: true };
   } catch (e) {
     return {
       ok: false,
-      error: e instanceof Error ? e.message : '이미지 등록에 실패했습니다.',
+      error: e instanceof Error ? e.message : '저장에 실패했습니다.',
     };
   }
+}
+
+export async function saveTasteEntry(entry: TasteEntry): Promise<ActionResult> {
+  try {
+    const entries = await readJson<TasteEntry>('taste.json');
+    entries.unshift(entry);
+    await writeJson('taste.json', entries);
+    revalidatePath('/taste');
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : '저장에 실패했습니다.',
+    };
+  }
+}
+
+export async function updateWardrobeEntry(
+  entry: WardrobeEntry,
+): Promise<ActionResult> {
+  try {
+    const entries = await readJson<WardrobeEntry>('wardrobe.json');
+    const idx = entries.findIndex((e) => e.id === entry.id);
+    if (idx === -1) return { ok: false, error: '항목을 찾을 수 없습니다.' };
+    entries[idx] = entry;
+    await writeJson('wardrobe.json', entries);
+    revalidatePath('/wardrobe');
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : '수정에 실패했습니다.',
+    };
+  }
+}
+
+export async function updateTasteEntry(
+  entry: TasteEntry,
+): Promise<ActionResult> {
+  try {
+    const entries = await readJson<TasteEntry>('taste.json');
+    const idx = entries.findIndex((e) => e.id === entry.id);
+    if (idx === -1) return { ok: false, error: '항목을 찾을 수 없습니다.' };
+    entries[idx] = entry;
+    await writeJson('taste.json', entries);
+    revalidatePath('/taste');
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : '수정에 실패했습니다.',
+    };
+  }
+}
+
+export async function deleteWardrobeEntry(
+  id: string,
+  imagePath: string,
+): Promise<ActionResult> {
+  try {
+    const entries = await readJson<WardrobeEntry>('wardrobe.json');
+    await writeJson(
+      'wardrobe.json',
+      entries.filter((e) => e.id !== id),
+    );
+    await unlink(imagePathToFilePath(imagePath, 'wardrobe')).catch(() => {});
+    revalidatePath('/wardrobe');
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : '삭제에 실패했습니다.',
+    };
+  }
+}
+
+export async function deleteTasteEntry(
+  id: string,
+  imagePath: string,
+): Promise<ActionResult> {
+  try {
+    const entries = await readJson<TasteEntry>('taste.json');
+    await writeJson(
+      'taste.json',
+      entries.filter((e) => e.id !== id),
+    );
+    await unlink(imagePathToFilePath(imagePath, 'taste')).catch(() => {});
+    revalidatePath('/taste');
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : '삭제에 실패했습니다.',
+    };
+  }
+}
+
+export async function cancelUpload(
+  imagePath: string,
+  type: 'wardrobe' | 'taste',
+): Promise<void> {
+  await unlink(imagePathToFilePath(imagePath, type)).catch(() => {});
 }
