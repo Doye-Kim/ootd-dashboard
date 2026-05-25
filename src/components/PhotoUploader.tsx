@@ -2,6 +2,7 @@
 
 import { useRef, useTransition } from 'react';
 import { prepareUpload } from '@/app/actions';
+import { Button } from '@/components/Button';
 import type { VisionTagResult, Weather } from '@/lib/types';
 
 type Props = {
@@ -37,13 +38,9 @@ export default function PhotoUploader({ type, onUploadReady }: Props) {
         className="hidden"
         onChange={handleChange}
       />
-      <button
-        onClick={() => inputRef.current?.click()}
-        disabled={isPending}
-        className="px-4 py-2 text-sm border border-gray-300 rounded disabled:opacity-50"
-      >
+      <Button variant="outline" onClick={() => inputRef.current?.click()} disabled={isPending} className="px-4">
         {isPending ? '분석 중...' : '+ 사진 등록'}
-      </button>
+      </Button>
     </>
   );
 }

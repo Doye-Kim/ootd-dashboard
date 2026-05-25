@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import ImageGrid from '@/components/ImageGrid';
+import { Chips } from '@/components/Chips';
+import { Button } from '@/components/Button';
 import { MOOD_LABELS, COLOR_LABELS, WEATHER_LABELS, LUGGAGE_LABELS } from '@/lib/labels';
 import type {
   WardrobeEntry,
@@ -23,35 +25,6 @@ type AppliedFilters = {
   date: string;
 };
 
-function Chips<T extends string>({
-  options, selected, labels, onChange,
-}: {
-  options: T[];
-  selected: T[];
-  labels: Record<T, string>;
-  onChange: (next: T[]) => void;
-}) {
-  const toggle = (v: T) =>
-    onChange(selected.includes(v) ? selected.filter((s) => s !== v) : [...selected, v]);
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {options.map((v) => (
-        <button
-          key={v}
-          type="button"
-          onClick={() => toggle(v)}
-          className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-            selected.includes(v)
-              ? 'bg-gray-900 text-white border-gray-900'
-              : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-          }`}
-        >
-          {labels[v]}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function buildAlt(entry: WardrobeEntry | TasteEntry): string {
   const parts = [...entry.mood, ...entry.colorTone, ...entry.seasonFeel];
@@ -184,14 +157,9 @@ export default function FilterDashboard({ wardrobe, taste }: Props) {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleRecommend}
-          disabled={weatherLoading}
-          className="w-full py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors"
-        >
+        <Button onClick={handleRecommend} disabled={weatherLoading} className="w-full">
           추천 받기
-        </button>
+        </Button>
       </div>
 
       {applied === null ? (

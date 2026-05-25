@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Chips } from '@/components/Chips';
+import { Button } from '@/components/Button';
 import { MOOD_LABELS, LUGGAGE_LABELS, COLOR_LABELS, SEASON_LABELS, WEATHER_LABELS } from '@/lib/labels';
 import type {
   WardrobeEntry, TasteEntry,
@@ -16,35 +18,6 @@ type Props = {
   onDelete?: () => Promise<void>;
 };
 
-function MultiChips<T extends string>({
-  options, selected, labels, onChange,
-}: {
-  options: T[];
-  selected: T[];
-  labels: Record<T, string>;
-  onChange: (next: T[]) => void;
-}) {
-  const toggle = (v: T) =>
-    onChange(selected.includes(v) ? selected.filter((s) => s !== v) : [...selected, v]);
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {options.map((v) => (
-        <button
-          key={v}
-          type="button"
-          onClick={() => toggle(v)}
-          className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-            selected.includes(v)
-              ? 'bg-gray-900 text-white border-gray-900'
-              : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-          }`}
-        >
-          {labels[v]}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 
 export default function EntryModal({ type, mode, entry, onSave, onClose, onDelete }: Props) {
@@ -126,7 +99,7 @@ export default function EntryModal({ type, mode, entry, onSave, onClose, onDelet
 
           <div>
             <p className="text-xs text-gray-400 mb-1.5">기분</p>
-            <MultiChips
+            <Chips
               options={['CASUAL', 'FORMAL', 'DATE'] as Mood[]}
               selected={mood}
               labels={MOOD_LABELS}
@@ -137,7 +110,7 @@ export default function EntryModal({ type, mode, entry, onSave, onClose, onDelet
           {isWardrobe && (
             <div>
               <p className="text-xs text-gray-400 mb-1.5">짐</p>
-              <MultiChips
+              <Chips
                 options={['LIGHT', 'NORMAL', 'HEAVY'] as Luggage[]}
                 selected={luggage}
                 labels={LUGGAGE_LABELS}
@@ -148,7 +121,7 @@ export default function EntryModal({ type, mode, entry, onSave, onClose, onDelet
 
           <div>
             <p className="text-xs text-gray-400 mb-1.5">색감</p>
-            <MultiChips
+            <Chips
               options={['WARM', 'COOL', 'NEUTRAL', 'COLORFUL', 'MONOCHROME'] as ColorTone[]}
               selected={colorTone}
               labels={COLOR_LABELS}
@@ -158,7 +131,7 @@ export default function EntryModal({ type, mode, entry, onSave, onClose, onDelet
 
           <div>
             <p className="text-xs text-gray-400 mb-1.5">계절감</p>
-            <MultiChips
+            <Chips
               options={['SPRING', 'SUMMER', 'AUTUMN', 'WINTER'] as SeasonFeel[]}
               selected={seasonFeel}
               labels={SEASON_LABELS}
@@ -169,7 +142,7 @@ export default function EntryModal({ type, mode, entry, onSave, onClose, onDelet
           {isWardrobe && (
             <div>
               <p className="text-xs text-gray-400 mb-1.5">날씨</p>
-              <MultiChips
+              <Chips
                 options={['PRECIPITATION', 'OTHER'] as WeatherCondition[]}
                 selected={weatherCondition}
                 labels={WEATHER_LABELS}
@@ -191,31 +164,15 @@ export default function EntryModal({ type, mode, entry, onSave, onClose, onDelet
 
         <div className="flex gap-2 px-4 pb-4">
           {mode === 'upload' ? (
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2 text-sm border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50"
-            >
-              취소
-            </button>
+            <Button variant="outline" onClick={onClose} className="flex-1">취소</Button>
           ) : (
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="flex-1 py-2 text-sm border border-red-200 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50"
-            >
+            <Button variant="danger" onClick={handleDelete} disabled={isDeleting} className="flex-1">
               {isDeleting ? '삭제 중...' : '삭제'}
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex-1 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
-          >
+          <Button onClick={handleSave} disabled={isSaving} className="flex-1">
             {isSaving ? '저장 중...' : '저장'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
