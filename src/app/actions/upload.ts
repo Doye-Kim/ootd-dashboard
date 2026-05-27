@@ -32,9 +32,8 @@ async function toJpeg(buf: Buffer): Promise<Buffer> {
   return Buffer.from(await heicConvert({ buffer: buf, format: 'JPEG', quality: 0.9 }));
 }
 
-async function analyzeImage(file: File): Promise<VisionTagResult> {
+async function analyzeImage(file: File, raw: Buffer): Promise<VisionTagResult> {
   const heic = isHeic(file);
-  const raw = Buffer.from((await file.arrayBuffer()) as ArrayBuffer);
   const buffer = heic ? await toJpeg(raw) : raw;
   const mediaType = heic
     ? ('image/jpeg' as const)
@@ -61,12 +60,11 @@ async function analyzeImage(file: File): Promise<VisionTagResult> {
   return JSON.parse(text);
 }
 
-async function saveImageToDisk(file: File, type: 'wardrobe' | 'taste'): Promise<string> {
+async function saveImageToDisk(file: File, raw: Buffer, type: 'wardrobe' | 'taste'): Promise<string> {
   const dir = path.join(DATA_PATH, type);
   await mkdir(dir, { recursive: true });
 
   const heic = isHeic(file);
-  const raw = Buffer.from((await file.arrayBuffer()) as ArrayBuffer);
   const ext = heic ? 'jpg' : file.name.split('.').pop() ?? 'jpg';
   const buffer = heic ? await toJpeg(raw) : raw;
 
@@ -75,10 +73,9 @@ async function saveImageToDisk(file: File, type: 'wardrobe' | 'taste'): Promise<
   return `/api/image?type=${type}&file=${filename}`;
 }
 
-async function extractExif(file: File): Promise<{ date: string | null; lat: number | null; lon: number | null }> {
+async function extractExif(raw: Buffer): Promise<{ date: string | null; lat: number | null; lon: number | null }> {
   try {
-    const buffer = Buffer.from((await file.arrayBuffer()) as ArrayBuffer);
-    const exif = await exifr.parse(buffer, true);
+    const exif = await exifr.parse(raw, true);
     if (!exif) return { date: null, lat: null, lon: null };
     const date = exif.DateTimeOriginal instanceof Date
       ? exif.DateTimeOriginal.toISOString().split('T')[0]
@@ -121,15 +118,16 @@ export async function prepareUpload(
   let imagePath: string | undefined;
   try {
     const file = formData.get('image') as File;
+    const raw = Buffer.from((await file.arrayBuffer()) as ArrayBuffer);
     const [tagsResult, savedPath, exif] = await Promise.all([
-      analyzeImage(file)
+      analyzeImage(file, raw)
         .then((tags) => ({ ok: true as const, tags }))
         .catch((e) => {
           console.error('[analyzeImage 실패]', e instanceof Error ? e.message : e);
           return { ok: false as const, tags: { mood: [], colorTone: [], seasonFeel: [] } as VisionTagResult };
         }),
-      saveImageToDisk(file, type),
-      extractExif(file),
+      saveImageToDisk(file, raw, type),
+      extractExif(raw),
     ]);
     imagePath = savedPath;
     const lat = exif.lat ?? 35.1796;
