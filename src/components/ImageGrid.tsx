@@ -10,6 +10,7 @@ const GAP = 8;
 const PAD = 8;
 
 function colCount(width: number): number {
+  if (width >= 1280) return 5;
   if (width >= 1024) return 4;
   if (width >= 640) return 3;
   return 2;
@@ -72,7 +73,7 @@ export default function ImageGrid({ items, onItemClick }: Props) {
           >
             {!isLoaded && (
               <div
-                className="w-full flex items-center justify-center rounded border border-gray-100 bg-gray-50 shadow-sm"
+                className="w-full flex items-center justify-center rounded-lg border border-gray-100 bg-gray-50 shadow-sm"
                 style={{ height: p.h }}
               >
                 <div className="w-5 h-5 rounded-full border-2 border-gray-200 border-t-gray-400 animate-spin" />
@@ -81,7 +82,7 @@ export default function ImageGrid({ items, onItemClick }: Props) {
             <img
               src={item.imagePath}
               alt={item.alt}
-              className={`w-full block ${isLoaded ? '' : 'hidden'}`}
+              className={`w-full block rounded-lg ${isLoaded ? '' : 'hidden'}`}
               onLoad={(e) => {
                 const { naturalWidth, naturalHeight } = e.currentTarget;
                 ratios.current[item.id] = naturalHeight / naturalWidth;

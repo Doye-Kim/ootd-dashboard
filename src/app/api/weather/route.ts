@@ -1,17 +1,17 @@
 import { DEFAULT_LAT, DEFAULT_LON, wmoToCondition } from '@/lib/weather';
 import type { ApiResponse, WeatherCondition } from '@/lib/types';
 
-type WeatherData = { temp: number; condition: WeatherCondition; label: string };
+type WeatherData = { temp: number; condition: WeatherCondition; label: string; icon: string };
 
-function wmoToLabel(code: number): string {
-  if (code === 0) return '맑음';
-  if (code <= 3) return '흐림';
-  if (code <= 48) return '안개';
-  if (code <= 67) return '비';
-  if (code <= 77) return '눈';
-  if (code <= 82) return '소나기';
-  if (code <= 86) return '눈';
-  return '비';
+function wmoToLabel(code: number): { label: string; icon: string } {
+  if (code === 0) return { label: '맑음', icon: '☀️' };
+  if (code <= 3) return { label: '흐림', icon: '⛅' };
+  if (code <= 48) return { label: '안개', icon: '🌫️' };
+  if (code <= 67) return { label: '비', icon: '🌧️' };
+  if (code <= 77) return { label: '눈', icon: '🌨️' };
+  if (code <= 82) return { label: '소나기', icon: '🌦️' };
+  if (code <= 86) return { label: '눈', icon: '🌨️' };
+  return { label: '비', icon: '🌧️' };
 }
 
 async function fetchDayWeather(date: string): Promise<WeatherData | null> {
@@ -30,12 +30,14 @@ async function fetchDayWeather(date: string): Promise<WeatherData | null> {
     const codes: number[] = json.daily?.weathercode ?? [];
     if (codes.length === 0) return null;
 
+    const { label, icon } = wmoToLabel(codes[0]);
     return {
       temp: Math.round(
         (json.daily.temperature_2m_max[0] + json.daily.temperature_2m_min[0]) / 2,
       ),
       condition: wmoToCondition(codes[0]),
-      label: wmoToLabel(codes[0]),
+      label,
+      icon,
     };
   } catch {
     return null;

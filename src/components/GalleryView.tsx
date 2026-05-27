@@ -7,15 +7,28 @@ import PhotoUploader from '@/components/PhotoUploader';
 import EntryModal from '@/components/EntryModal';
 import { Button } from '@/components/Button';
 import {
-  saveWardrobeEntry, saveTasteEntry,
-  updateWardrobeEntry, updateTasteEntry,
-  deleteWardrobeEntry, deleteTasteEntry,
-  cancelUpload, generateCalibration,
+  saveWardrobeEntry,
+  saveTasteEntry,
+  updateWardrobeEntry,
+  updateTasteEntry,
+  deleteWardrobeEntry,
+  deleteTasteEntry,
+  cancelUpload,
+  generateCalibration,
 } from '@/app/actions';
-import type { WardrobeEntry, TasteEntry, VisionTagResult, Weather } from '@/lib/types';
+import type {
+  WardrobeEntry,
+  TasteEntry,
+  VisionTagResult,
+  Weather,
+} from '@/lib/types';
 import { buildAlt } from '@/lib/utils';
 
-type ModalState = { mode: 'upload' | 'edit'; entry: WardrobeEntry | TasteEntry; originalTags?: VisionTagResult } | null;
+type ModalState = {
+  mode: 'upload' | 'edit';
+  entry: WardrobeEntry | TasteEntry;
+  originalTags?: VisionTagResult;
+} | null;
 
 type Props =
   | { type: 'wardrobe'; items: WardrobeEntry[] }
@@ -26,7 +39,14 @@ export default function GalleryView({ type, items }: Props) {
   const [modal, setModal] = useState<ModalState>(null);
   const [isCalibrating, startCalibration] = useTransition();
 
-  const handleUploadReady = (id: string, imagePath: string, tags: VisionTagResult, tagsOk: boolean, date: string | null, weather: Weather) => {
+  const handleUploadReady = (
+    id: string,
+    imagePath: string,
+    tags: VisionTagResult,
+    tagsOk: boolean,
+    date: string | null,
+    weather: Weather,
+  ) => {
     const base = {
       id,
       imagePath,
@@ -36,13 +56,24 @@ export default function GalleryView({ type, items }: Props) {
     };
     const entry: WardrobeEntry | TasteEntry =
       type === 'wardrobe'
-        ? { ...base, date: date ?? new Date().toISOString().split('T')[0], weather, luggage: [] }
+        ? {
+            ...base,
+            date: date ?? new Date().toISOString().split('T')[0],
+            weather,
+            luggage: [],
+          }
         : base;
-    setModal({ mode: 'upload', entry, originalTags: tagsOk ? tags : undefined });
+    setModal({
+      mode: 'upload',
+      entry,
+      originalTags: tagsOk ? tags : undefined,
+    });
   };
 
   const handleItemClick = (id: string) => {
-    const entry = (items as (WardrobeEntry | TasteEntry)[]).find((i) => i.id === id);
+    const entry = (items as (WardrobeEntry | TasteEntry)[]).find(
+      (i) => i.id === id,
+    );
     if (entry) setModal({ mode: 'edit', entry });
   };
 
@@ -50,12 +81,18 @@ export default function GalleryView({ type, items }: Props) {
     const result =
       modal?.mode === 'upload'
         ? type === 'wardrobe'
-          ? await saveWardrobeEntry(updated as WardrobeEntry, modal.originalTags)
+          ? await saveWardrobeEntry(
+              updated as WardrobeEntry,
+              modal.originalTags,
+            )
           : await saveTasteEntry(updated as TasteEntry, modal.originalTags)
         : type === 'wardrobe'
-          ? await updateWardrobeEntry(updated as WardrobeEntry)
-          : await updateTasteEntry(updated as TasteEntry);
-    if (!result.ok) { alert(result.error); return; }
+        ? await updateWardrobeEntry(updated as WardrobeEntry)
+        : await updateTasteEntry(updated as TasteEntry);
+    if (!result.ok) {
+      alert(result.error);
+      return;
+    }
     setModal(null);
     router.refresh();
   };
@@ -74,7 +111,10 @@ export default function GalleryView({ type, items }: Props) {
       type === 'wardrobe'
         ? await deleteWardrobeEntry(id, imagePath)
         : await deleteTasteEntry(id, imagePath);
-    if (!result.ok) { alert(result.error); return; }
+    if (!result.ok) {
+      alert(result.error);
+      return;
+    }
     setModal(null);
     router.refresh();
   };
@@ -87,16 +127,17 @@ export default function GalleryView({ type, items }: Props) {
 
   return (
     <main>
-      <div className="flex justify-between px-4 py-3 border-b border-gray-200">
+      <div className='flex justify-end gap-3 px-4 py-3'>
         <Button
-          variant="outline"
-          className="px-3 text-xs"
+          variant='secondary'
+          className='px-4 text-sm'
           disabled={isCalibrating}
-          onClick={() => startCalibration(async () => {
-            const result = await generateCalibration();
-            if (!result.ok) alert(result.error);
-          })}
-        >
+          onClick={() =>
+            startCalibration(async () => {
+              const result = await generateCalibration();
+              if (!result.ok) alert(result.error);
+            })
+          }>
           {isCalibrating ? 'AI 학습 중...' : 'AI 학습'}
         </Button>
         <PhotoUploader type={type} onUploadReady={handleUploadReady} />
