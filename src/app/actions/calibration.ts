@@ -33,8 +33,14 @@ export async function recordCorrection(imagePath: string, original: VisionTagRes
 }
 
 export async function generateCalibration(): Promise<ActionResult> {
-  const corrections = await readJson<Correction>('corrections.json');
-  if (corrections.length === 0) return { ok: false, error: '교정 데이터가 없습니다.' };
+  let toProcess: Correction[] = [];
+  await withFileLock('corrections', async () => {
+    const all = await readJson<Correction>('corrections.json');
+    toProcess = all.slice(0, 5);
+    await writeJson('corrections.json', all.slice(5));
+  });
+  if (toProcess.length === 0) return { ok: false, error: '교정 데이터가 없습니다.' };
+  const corrections = toProcess;
 
   const current = await readCalibration();
 
@@ -102,8 +108,5 @@ ${current || '없음'}
   await writeFile(logPath, logEntry, { flag: 'a', encoding: 'utf-8' });
 
   await writeFile(CALIBRATION_PATH, calibration, 'utf-8');
-  await withFileLock('corrections', async () => {
-    await writeJson('corrections.json', corrections.slice(5));
-  });
   return { ok: true };
 }
