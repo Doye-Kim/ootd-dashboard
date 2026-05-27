@@ -2,7 +2,8 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import type { NextRequest } from 'next/server';
 
-if (!process.env.DATA_PATH) throw new Error('DATA_PATH 환경변수가 설정되지 않았습니다.');
+if (!process.env.DATA_PATH)
+  throw new Error('DATA_PATH 환경변수가 설정되지 않았습니다.');
 const DATA_PATH = process.env.DATA_PATH;
 
 const ALLOWED_TYPES = new Set(['wardrobe', 'taste']);
@@ -23,7 +24,6 @@ export async function GET(request: NextRequest): Promise<Response> {
     return new Response('Bad Request', { status: 400 });
   }
 
-  // 경로 탈출(../) 방지
   const filename = path.basename(file);
   const filePath = path.join(DATA_PATH, type, filename);
 

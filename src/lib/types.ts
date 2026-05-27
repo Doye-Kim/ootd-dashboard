@@ -39,6 +39,7 @@ export type VisionTagResult = {
 
 export type Correction = {
   imagePath: string;
+  original: VisionTagResult;
   corrected: VisionTagResult;
   timestamp: string;
 };
