@@ -1,14 +1,7 @@
+import { DEFAULT_LAT, DEFAULT_LON, wmoToCondition } from '@/lib/weather';
 import type { ApiResponse, WeatherCondition } from '@/lib/types';
 
 type WeatherData = { temp: number; condition: WeatherCondition; label: string };
-
-const LAT = 35.1796;
-const LON = 129.0756;
-
-function wmoToCondition(code: number): WeatherCondition {
-  if (code <= 48) return 'OTHER';
-  return 'PRECIPITATION';
-}
 
 function wmoToLabel(code: number): string {
   if (code === 0) return '맑음';
@@ -29,7 +22,7 @@ async function fetchDayWeather(date: string): Promise<WeatherData | null> {
       : 'https://api.open-meteo.com/v1/forecast';
 
   try {
-    const url = `${base}?latitude=${LAT}&longitude=${LON}&start_date=${date}&end_date=${date}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia/Seoul`;
+    const url = `${base}?latitude=${DEFAULT_LAT}&longitude=${DEFAULT_LON}&start_date=${date}&end_date=${date}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Asia/Seoul`;
     const res = await fetch(url);
     if (!res.ok) return null;
 

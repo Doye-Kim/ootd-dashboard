@@ -8,7 +8,8 @@ import { VISION_PROMPT } from '@/lib/prompts';
 import { anthropic } from '@/lib/anthropic';
 import { DATA_PATH, imagePathToFilePath } from './_utils';
 import { readCalibration } from './calibration';
-import type { VisionTagResult, Weather, WeatherCondition } from '@/lib/types';
+import { DEFAULT_LAT, DEFAULT_LON, wmoToCondition } from '@/lib/weather';
+import type { VisionTagResult, Weather } from '@/lib/types';
 
 // heic-convert has no type declarations
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -88,11 +89,6 @@ async function extractExif(raw: Buffer): Promise<{ date: string | null; lat: num
   }
 }
 
-function wmoToCondition(code: number): WeatherCondition {
-  if (code <= 48) return 'OTHER';
-  return 'PRECIPITATION';
-}
-
 async function fetchHistoricalWeather(lat: number, lon: number, date: string): Promise<Weather> {
   try {
     const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${date}&end_date=${date}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
@@ -130,8 +126,8 @@ export async function prepareUpload(
       extractExif(raw),
     ]);
     imagePath = savedPath;
-    const lat = exif.lat ?? 35.1796;
-    const lon = exif.lon ?? 129.0756;
+    const lat = exif.lat ?? DEFAULT_LAT;
+    const lon = exif.lon ?? DEFAULT_LON;
     const weather: Weather = exif.date !== null
       ? await fetchHistoricalWeather(lat, lon, exif.date)
       : { temp: null, condition: [] };
