@@ -21,7 +21,7 @@ export default function NavBar() {
               href={href}
               className={`block py-3 px-4 text-sm ${
                 pathname === href
-                  ? 'border-b-2 border-black font-bold'
+                  ? 'border-b-2 border-black font-bold dark:border-white'
                   : 'font-medium text-gray-400'
               }`}>
               {label}

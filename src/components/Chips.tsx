@@ -24,8 +24,8 @@ export function Chips<T extends string>({
           onClick={() => toggle(v)}
           className={`px-3.5 py-1 text-sm rounded-lg border cursor-pointer transition-colors ${
             selected.includes(v)
-              ? 'bg-gray-900 text-white border-gray-900'
-              : 'bg-gray-100 text-gray-700 border-none hover:bg-gray-200'
+              ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
+              : 'bg-gray-100 text-gray-700 border-none hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
           }`}>
           {labels[v]}
         </button>

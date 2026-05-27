@@ -73,10 +73,10 @@ export default function ImageGrid({ items, onItemClick }: Props) {
           >
             {!isLoaded && (
               <div
-                className="w-full flex items-center justify-center rounded-lg border border-gray-100 bg-gray-50 shadow-sm"
+                className="w-full flex items-center justify-center rounded-lg border border-gray-100 bg-gray-50 shadow-sm dark:border-gray-800 dark:bg-gray-900"
                 style={{ height: p.h }}
               >
-                <div className="w-5 h-5 rounded-full border-2 border-gray-200 border-t-gray-400 animate-spin" />
+                <div className="w-5 h-5 rounded-full border-2 border-gray-200 border-t-gray-400 animate-spin dark:border-gray-700 dark:border-t-gray-500" />
               </div>
             )}
             <img

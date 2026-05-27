@@ -164,11 +164,12 @@ export default function FilterDashboard({ wardrobe, taste }: Props) {
 
   return (
     <main className='sm:flex sm:items-start'>
-      <div className='px-4 py-3 space-y-3 border-b border-gray-200 sm:border-b-0 sm:mt-4 sm:w-72 sm:shrink-0 sm:sticky sm:top-0 sm:min-h-screen'>
+      <div className='px-4 py-3 space-y-3 border-b border-gray-200 sm:border-b-0 sm:mt-4 sm:w-72 sm:shrink-0 sm:sticky sm:top-0 sm:min-h-screen dark:border-gray-700'>
         <div className='flex flex-col gap-0.5'>
-          <div
+          <label
+            htmlFor='filter-date'
             className='flex items-center gap-1.5 cursor-pointer'
-            onClick={() => dateInputRef.current?.showPicker()}>
+            onClick={() => { try { dateInputRef.current?.showPicker(); } catch {} }}>
             <svg
               xmlns='http://www.w3.org/2000/svg'
               height='16'
@@ -184,13 +185,14 @@ export default function FilterDashboard({ wardrobe, taste }: Props) {
             </span>
             <input
               ref={dateInputRef}
+              id='filter-date'
               type='date'
               value={date}
               min={today}
               onChange={(e) => setDate(e.target.value)}
               className='sr-only'
             />
-          </div>
+          </label>
           {weatherLoading ? (
             <span className='text-sm text-gray-400'>날씨 조회 중...</span>
           ) : weatherInfo ? (
@@ -268,7 +270,7 @@ export default function FilterDashboard({ wardrobe, taste }: Props) {
         ) : (
           <>
             <section>
-              <h2 className='px-4 py-2 text-sm font-medium text-slate-600'>
+              <h2 className='px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400'>
                 옷장
               </h2>
               {wardrobeGrid.length === 0 ? (

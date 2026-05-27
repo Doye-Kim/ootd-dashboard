@@ -146,15 +146,15 @@ export default function EntryModal({
       }}>
       <div
         ref={sheetRef}
-        className='animate-slide-up sm:[animation:none] bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] sm:max-h-[90vh] overflow-y-auto overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+        className='animate-slide-up sm:[animation:none] bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] sm:max-h-[90vh] overflow-y-auto overscroll-y-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
         <div
           className='flex justify-center pt-3 pb-1 sm:hidden cursor-grab active:cursor-grabbing touch-none'
           onTouchStart={handleDragStart}
           onTouchMove={handleDragMove}
           onTouchEnd={handleDragEnd}>
-          <div className='w-10 h-1 rounded-full bg-gray-300' />
+          <div className='w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600' />
         </div>
-        <div className='bg-gray-100 sm:rounded-t-xl overflow-hidden'>
+        <div className='bg-gray-100 dark:bg-gray-800 sm:rounded-t-xl overflow-hidden'>
           <img src={entry.imagePath} alt='' className='w-full block' />
         </div>
 
@@ -171,7 +171,7 @@ export default function EntryModal({
                 type='date'
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className='w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5'
+                className='w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 dark:border-gray-700 dark:bg-gray-800 dark:text-white'
               />
             </div>
           )}

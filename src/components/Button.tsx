@@ -4,9 +4,9 @@ type Variant = 'primary' | 'outline' | 'danger' | 'secondary';
 
 const variantClass: Record<Variant, string> = {
   primary: 'bg-slate-700 text-white hover:bg-slate-500',
-  outline: 'border border-slate-700 text-slate-700 hover:bg-slate-100',
-  danger: ' border border-red-700 text-red-700 hover:bg-red-50',
-  secondary: 'bg-slate-200 hover:bg-slate-300 text-slate-600',
+  outline: 'border border-slate-700 text-slate-700 hover:bg-slate-100 dark:border-slate-400 dark:text-slate-300 dark:hover:bg-slate-800',
+  danger: 'border border-red-700 text-red-700 hover:bg-red-50 dark:border-red-400 dark:text-red-400 dark:hover:bg-red-950',
+  secondary: 'bg-slate-200 hover:bg-slate-300 text-slate-600 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-300',
 };
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
