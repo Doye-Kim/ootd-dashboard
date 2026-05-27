@@ -7,7 +7,7 @@ import type { VisionTagResult, Weather } from '@/lib/types';
 
 type Props = {
   type: 'wardrobe' | 'taste';
-  onUploadReady: (imagePath: string, tags: VisionTagResult, date: string | null, weather: Weather) => void;
+  onUploadReady: (id: string, imagePath: string, tags: VisionTagResult, tagsOk: boolean, date: string | null, weather: Weather) => void;
 };
 
 export default function PhotoUploader({ type, onUploadReady }: Props) {
@@ -22,10 +22,15 @@ export default function PhotoUploader({ type, onUploadReady }: Props) {
     formData.append('image', file);
 
     startTransition(async () => {
-      const result = await prepareUpload(formData, type);
-      if (inputRef.current) inputRef.current.value = '';
-      if (!result.ok) { alert(result.error); return; }
-      onUploadReady(result.imagePath, result.tags, result.date, result.weather);
+      try {
+        const result = await prepareUpload(formData, type);
+        if (inputRef.current) inputRef.current.value = '';
+        if (!result.ok) { alert(result.error); return; }
+        onUploadReady(result.id, result.imagePath, result.tags, result.tagsOk, result.date, result.weather);
+      } catch (e) {
+        if (inputRef.current) inputRef.current.value = '';
+        alert(e instanceof Error ? e.message : String(e));
+      }
     });
   };
 

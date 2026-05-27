@@ -26,9 +26,9 @@ export default function GalleryView({ type, items }: Props) {
   const [modal, setModal] = useState<ModalState>(null);
   const [isCalibrating, startCalibration] = useTransition();
 
-  const handleUploadReady = (imagePath: string, tags: VisionTagResult, date: string | null, weather: Weather) => {
+  const handleUploadReady = (id: string, imagePath: string, tags: VisionTagResult, tagsOk: boolean, date: string | null, weather: Weather) => {
     const base = {
-      id: crypto.randomUUID(),
+      id,
       imagePath,
       mood: tags.mood,
       colorTone: tags.colorTone,
@@ -38,7 +38,7 @@ export default function GalleryView({ type, items }: Props) {
       type === 'wardrobe'
         ? { ...base, date: date ?? new Date().toISOString().split('T')[0], weather, luggage: [] }
         : base;
-    setModal({ mode: 'upload', entry, originalTags: tags });
+    setModal({ mode: 'upload', entry, originalTags: tagsOk ? tags : undefined });
   };
 
   const handleItemClick = (id: string) => {
