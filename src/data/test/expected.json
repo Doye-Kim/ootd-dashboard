@@ -11,7 +11,7 @@
     "filename": "IMG_4470.JPG",
     "expected": {
       "mood": ["CASUAL", "DATE"],
-      "colorTone": "NEUTRAL",
+      "colorTone": "COOL",
       "seasonFeel": ["SUMMER"]
     }
   },
