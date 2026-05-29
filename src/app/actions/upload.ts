@@ -119,7 +119,6 @@ export async function prepareUpload(
       analyzeImage(file, raw)
         .then((tags) => ({ ok: true as const, tags }))
         .catch((e) => {
-          console.error('[analyzeImage 실패]', e instanceof Error ? e.message : e);
           return { ok: false as const, tags: { mood: [], colorTone: [], seasonFeel: [] } as VisionTagResult };
         }),
       saveImageToDisk(file, raw, type),

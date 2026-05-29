@@ -98,8 +98,6 @@ ${current || '없음'}
   const fullText = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
   if (!fullText) return { ok: false, error: 'AI 응답이 비어 있습니다.' };
 
-  console.log('[generateCalibration 응답]\n', fullText);
-
   const calibration = fullText.split(/\[지침\]|#{1,3}\s*지침/)[1]?.trim() ?? '';
   if (!calibration) return { ok: false, error: '지침 섹션을 파싱할 수 없습니다.' };
 
