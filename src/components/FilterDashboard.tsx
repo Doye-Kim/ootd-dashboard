@@ -58,7 +58,7 @@ function filterWardrobe(
       return false;
     if (
       f.colorTones.length > 0 &&
-      !f.colorTones.some((c) => item.colorTone.includes(c))
+      !f.colorTones.includes(item.colorTone)
     )
       return false;
     if (
@@ -85,7 +85,7 @@ function filterTaste(items: TasteEntry[], f: AppliedFilters): TasteEntry[] {
       return false;
     if (
       f.colorTones.length > 0 &&
-      !f.colorTones.some((c) => item.colorTone.includes(c))
+      !f.colorTones.includes(item.colorTone)
     )
       return false;
     if (item.seasonFeel.length > 0 && !item.seasonFeel.includes(season))

@@ -5,11 +5,11 @@ import exifr from 'exifr';
 import { randomUUID } from 'crypto';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { VISION_PROMPT } from '@/lib/prompts';
-import { anthropic } from '@/lib/anthropic';
+import { anthropic, VISION_TEMPERATURE, VISION_MODEL } from '@/lib/anthropic';
 import { DATA_PATH, imagePathToFilePath } from './_utils';
 import { readCalibration } from './calibration';
 import { DEFAULT_LAT, DEFAULT_LON, wmoToCondition } from '@/lib/weather';
-import type { VisionTagResult, Weather } from '@/lib/types';
+import type { VisionTagResult, Weather, ColorTone } from '@/lib/types';
 
 // heic-convert has no type declarations
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -44,8 +44,9 @@ async function analyzeImage(file: File, raw: Buffer): Promise<VisionTagResult> {
   const prompt = calibration ? `${VISION_PROMPT}\n\n[보정 지침]\n${calibration}` : VISION_PROMPT;
 
   const message = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: VISION_MODEL,
     max_tokens: 256,
+    temperature: VISION_TEMPERATURE,
     messages: [{
       role: 'user',
       content: [
@@ -119,7 +120,7 @@ export async function prepareUpload(
       analyzeImage(file, raw)
         .then((tags) => ({ ok: true as const, tags }))
         .catch((e) => {
-          return { ok: false as const, tags: { mood: [], colorTone: [], seasonFeel: [] } as VisionTagResult };
+          return { ok: false as const, tags: { mood: [], colorTone: 'NEUTRAL' as ColorTone, seasonFeel: [] } as VisionTagResult };
         }),
       saveImageToDisk(file, raw, type),
       extractExif(raw),

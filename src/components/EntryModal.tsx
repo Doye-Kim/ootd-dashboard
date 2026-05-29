@@ -41,7 +41,7 @@ export default function EntryModal({
   const w = isWardrobe ? (entry as WardrobeEntry) : null;
 
   const [mood, setMood] = useState<Mood[]>(entry.mood);
-  const [colorTone, setColorTone] = useState<ColorTone[]>(entry.colorTone);
+  const [colorTone, setColorTone] = useState<ColorTone>(entry.colorTone);
   const [seasonFeel, setSeasonFeel] = useState<SeasonFeel[]>(entry.seasonFeel);
   const [luggage, setLuggage] = useState<Luggage[]>(w?.luggage ?? []);
   const [date, setDate] = useState(
@@ -210,9 +210,9 @@ export default function EntryModal({
                   'MONOCHROME',
                 ] as ColorTone[]
               }
-              selected={colorTone}
+              selected={[colorTone]}
               labels={COLOR_LABELS}
-              onChange={setColorTone}
+              onChange={(vals) => setColorTone(vals.find((v) => v !== colorTone) ?? colorTone)}
             />
           </fieldset>
 

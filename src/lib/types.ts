@@ -14,7 +14,7 @@ export type WardrobeEntry = {
   };
   mood: Mood[];
   luggage: Luggage[];
-  colorTone: ColorTone[];
+  colorTone: ColorTone;
   seasonFeel: SeasonFeel[];
 };
 
@@ -22,7 +22,7 @@ export type TasteEntry = {
   id: string;
   imagePath: string;
   mood: Mood[];
-  colorTone: ColorTone[];
+  colorTone: ColorTone;
   seasonFeel: SeasonFeel[];
 };
 
@@ -33,7 +33,7 @@ export type Weather = {
 
 export type VisionTagResult = {
   mood: Mood[];
-  colorTone: ColorTone[];
+  colorTone: ColorTone;
   seasonFeel: SeasonFeel[];
 };
 

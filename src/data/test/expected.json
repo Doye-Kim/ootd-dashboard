@@ -1,0 +1,26 @@
+[
+  {
+    "filename": "IMG_1973.jpg",
+    "expected": {
+      "mood": ["FORMAL"],
+      "colorTone": "WARM",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "IMG_4470.JPG",
+    "expected": {
+      "mood": ["CASUAL", "DATE"],
+      "colorTone": "NEUTRAL",
+      "seasonFeel": ["SUMMER"]
+    }
+  },
+  {
+    "filename": "IMG_4441.jpg",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "COLORFUL",
+      "seasonFeel": ["SPRING", "AUTUMN", "WINTER"]
+    }
+  }
+]

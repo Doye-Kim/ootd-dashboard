@@ -27,5 +27,5 @@ export function imagePathToFilePath(imagePath: string, type: 'wardrobe' | 'taste
 
 export function tagsChanged(a: VisionTagResult, b: VisionTagResult): boolean {
   const s = (arr: string[]) => [...arr].sort().join(',');
-  return s(a.mood) !== s(b.mood) || s(a.colorTone) !== s(b.colorTone) || s(a.seasonFeel) !== s(b.seasonFeel);
+  return s(a.mood) !== s(b.mood) || a.colorTone !== b.colorTone || s(a.seasonFeel) !== s(b.seasonFeel);
 }
