@@ -1,14 +1,17 @@
 'use server';
 
 import path from 'path';
-import { readFile, writeFile } from 'fs/promises';
-import { anthropic } from '@/lib/anthropic';
+import { readFile, writeFile, mkdir } from 'fs/promises';
+import { anthropic, CALIBRATION_MODEL } from '@/lib/anthropic';
 import { readJson, writeJson } from '@/lib/data';
 import { VISION_PROMPT } from '@/lib/prompts';
 import { withFileLock, imagePathToFilePath, type ActionResult } from './_utils';
 import type { VisionTagResult, Correction } from '@/lib/types';
 
-const CALIBRATION_PATH = path.join(process.cwd(), 'src/data/analysis/calibration.txt');
+const CALIBRATION_PATH = path.join(
+  process.cwd(),
+  'src/data/analysis/calibration.txt',
+);
 
 export async function readCalibration(): Promise<string> {
   try {
@@ -18,11 +21,20 @@ export async function readCalibration(): Promise<string> {
   }
 }
 
-export async function recordCorrection(imagePath: string, original: VisionTagResult, corrected: VisionTagResult): Promise<void> {
+export async function recordCorrection(
+  imagePath: string,
+  original: VisionTagResult,
+  corrected: VisionTagResult,
+): Promise<void> {
   let count = 0;
   await withFileLock('corrections', async () => {
     const list = await readJson<Correction>('corrections.json');
-    list.unshift({ imagePath, original, corrected, timestamp: new Date().toISOString().split('T')[0] });
+    list.unshift({
+      imagePath,
+      original,
+      corrected,
+      timestamp: new Date().toISOString().split('T')[0],
+    });
     const trimmed = list.slice(0, 20);
     await writeJson('corrections.json', trimmed);
     count = trimmed.length;
@@ -39,13 +51,21 @@ export async function generateCalibration(): Promise<ActionResult> {
     toProcess = all.slice(0, 5);
     await writeJson('corrections.json', all.slice(5));
   });
-  if (toProcess.length === 0) return { ok: false, error: '교정 데이터가 없습니다.' };
+  if (toProcess.length === 0)
+    return { ok: false, error: '교정 데이터가 없습니다.' };
   const corrections = toProcess;
 
   const current = await readCalibration();
 
   type ContentBlock =
-    | { type: 'image'; source: { type: 'base64'; media_type: 'image/jpeg' | 'image/png'; data: string } }
+    | {
+        type: 'image';
+        source: {
+          type: 'base64';
+          media_type: 'image/jpeg' | 'image/png';
+          data: string;
+        };
+      }
     | { type: 'text'; text: string };
 
   const content: ContentBlock[] = [];
@@ -58,9 +78,20 @@ export async function generateCalibration(): Promise<ActionResult> {
       const filePath = imagePathToFilePath(correction.imagePath, type);
       const buffer = await readFile(filePath);
       const ext = filePath.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const mediaType = ext === 'png' ? 'image/png' as const : 'image/jpeg' as const;
-      content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: buffer.toString('base64') } });
-      content.push({ type: 'text', text: `AI 원본: mood=[${correction.original.mood}], colorTone=[${correction.original.colorTone}], seasonFeel=[${correction.original.seasonFeel}] → 사용자 교정: mood=[${correction.corrected.mood}], colorTone=[${correction.corrected.colorTone}], seasonFeel=[${correction.corrected.seasonFeel}]` });
+      const mediaType =
+        ext === 'png' ? ('image/png' as const) : ('image/jpeg' as const);
+      content.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: mediaType,
+          data: buffer.toString('base64'),
+        },
+      });
+      content.push({
+        type: 'text',
+        text: `AI 원본: mood=[${correction.original.mood}], colorTone=[${correction.original.colorTone}], seasonFeel=[${correction.original.seasonFeel}] → 사용자 교정: mood=[${correction.corrected.mood}], colorTone=[${correction.corrected.colorTone}], seasonFeel=[${correction.corrected.seasonFeel}]`,
+      });
     } catch {
       // 이미지 파일 없으면 스킵
     }
@@ -90,21 +121,57 @@ ${current || '없음'}
   });
 
   const message = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+    model: CALIBRATION_MODEL,
     max_tokens: 800,
     messages: [{ role: 'user', content }],
   });
 
-  const fullText = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
+  const fullText =
+    message.content[0].type === 'text' ? message.content[0].text.trim() : '';
   if (!fullText) return { ok: false, error: 'AI 응답이 비어 있습니다.' };
 
   const calibration = fullText.split(/\[지침\]|#{1,3}\s*지침/)[1]?.trim() ?? '';
-  if (!calibration) return { ok: false, error: '지침 섹션을 파싱할 수 없습니다.' };
+  if (!calibration)
+    return { ok: false, error: '지침 섹션을 파싱할 수 없습니다.' };
 
-  const logPath = path.join(process.cwd(), 'src/data/analysis/calibration_log.txt');
-  const logEntry = `\n${'='.repeat(60)}\n${new Date().toISOString()}\n${'='.repeat(60)}\n${fullText}\n`;
+  const logPath = path.join(
+    process.cwd(),
+    'src/data/analysis/calibration_log.txt',
+  );
+  const logEntry = `\n${'='.repeat(
+    60,
+  )}\n${new Date().toISOString()}\n${'='.repeat(60)}\n${fullText}\n`;
   await writeFile(logPath, logEntry, { flag: 'a', encoding: 'utf-8' });
 
   await writeFile(CALIBRATION_PATH, calibration, 'utf-8');
+
+  try {
+    const indexPath = path.join(process.cwd(), 'src/prompts/index.ts');
+    const indexContent = await readFile(indexPath, 'utf-8');
+    const match = indexContent.match(/CURRENT_VERSION = '(v\d+)'/);
+    if (match) {
+      const current = match[1];
+      const next = `v${parseInt(current.slice(1)) + 1}`;
+      const versionsDir = path.join(
+        process.cwd(),
+        'src/data/analysis/versions',
+      );
+      await mkdir(versionsDir, { recursive: true });
+      await writeFile(
+        path.join(versionsDir, `calibration_${next}.txt`),
+        calibration,
+        'utf-8',
+      );
+      await writeFile(
+        indexPath,
+        indexContent.replace(
+          `CURRENT_VERSION = '${current}'`,
+          `CURRENT_VERSION = '${next}'`,
+        ),
+        'utf-8',
+      );
+    }
+  } catch {}
+
   return { ok: true };
 }

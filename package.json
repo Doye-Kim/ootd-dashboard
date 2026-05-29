@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:vision": "npx tsx scripts/test-vision.ts",
+    "test:vision:repeat": "npx tsx scripts/test-vision.ts --repeat=3"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
