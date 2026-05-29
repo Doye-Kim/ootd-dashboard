@@ -10,4 +10,3 @@ export const anthropic = new Anthropic({
 
 export const VISION_TEMPERATURE = 0;
 export const VISION_MODEL = 'claude-sonnet-4-6';
-export const CALIBRATION_MODEL = 'claude-haiku-4-5-20251001';

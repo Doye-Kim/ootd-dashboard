@@ -2,7 +2,7 @@
 
 import path from 'path';
 import { readFile, writeFile, mkdir } from 'fs/promises';
-import { anthropic, CALIBRATION_MODEL } from '@/lib/anthropic';
+import { anthropic, VISION_MODEL } from '@/lib/anthropic';
 import { readJson, writeJson } from '@/lib/data';
 import { VISION_PROMPT } from '@/lib/prompts';
 import { withFileLock, imagePathToFilePath, type ActionResult } from './_utils';
@@ -40,7 +40,7 @@ export async function recordCorrection(
     count = trimmed.length;
   });
   if (count > 0 && count % 5 === 0) {
-    generateCalibration().catch(() => {});
+    generateCalibration().catch(console.error);
   }
 }
 
@@ -117,12 +117,12 @@ ${current || '없음'}
 각 사진에 대해 AI가 어떻게 판단했을지, 사용자가 왜 수정했을지 추론.
 
 [지침]
-3줄 이내, 각 줄은 완성된 문장.`,
+4줄 이내, 각 줄은 완성된 문장.`,
   });
 
   const message = await anthropic.messages.create({
-    model: CALIBRATION_MODEL,
-    max_tokens: 800,
+    model: VISION_MODEL,
+    max_tokens: 1500,
     messages: [{ role: 'user', content }],
   });
 
