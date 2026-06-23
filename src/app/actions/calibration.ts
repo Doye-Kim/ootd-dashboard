@@ -10,15 +10,34 @@ import type { VisionTagResult, Correction } from '@/lib/types';
 
 const CALIBRATION_PATH = path.join(
   process.cwd(),
-  'src/data/analysis/calibration.txt',
+  'src/data/analysis/calibration.json',
 );
 
-export async function readCalibration(): Promise<string> {
+type CalibrationCategory = 'mood' | 'colorTone' | 'seasonFeel';
+const CATEGORIES: CalibrationCategory[] = ['mood', 'colorTone', 'seasonFeel'];
+type CalibrationStore = Record<CalibrationCategory, string[]>;
+
+async function readCalibrationStore(): Promise<CalibrationStore> {
   try {
-    return (await readFile(CALIBRATION_PATH, 'utf-8')).trim();
+    const raw = JSON.parse(await readFile(CALIBRATION_PATH, 'utf-8'));
+    return {
+      mood: raw.mood ?? [],
+      colorTone: raw.colorTone ?? [],
+      seasonFeel: raw.seasonFeel ?? [],
+    };
   } catch {
-    return '';
+    return { mood: [], colorTone: [], seasonFeel: [] };
   }
+}
+
+function formatCalibrationStore(store: CalibrationStore): string {
+  return CATEGORIES.filter((cat) => store[cat].length > 0)
+    .map((cat) => `[${cat} 판단 보정]\n${store[cat].map((t) => `- ${t}`).join('\n')}`)
+    .join('\n\n');
+}
+
+export async function readCalibration(): Promise<string> {
+  return formatCalibrationStore(await readCalibrationStore());
 }
 
 export async function recordCorrection(
@@ -55,7 +74,7 @@ export async function generateCalibration(): Promise<ActionResult> {
     return { ok: false, error: '교정 데이터가 없습니다.' };
   const corrections = toProcess;
 
-  const current = await readCalibration();
+  const store = await readCalibrationStore();
 
   type ContentBlock =
     | {
@@ -97,27 +116,49 @@ export async function generateCalibration(): Promise<ActionResult> {
     }
   }
 
+  const numbered = (items: string[]) =>
+    items.length ? items.map((t, i) => `${i + 1}. ${t}`).join('\n') : '없음';
+
   content.push({
     type: 'text',
-    text: `위 코디 사진들과 사용자 교정 태그를 보고, 앞으로 비슷한 사진을 더 정확하게 태깅하기 위한 보정 지침을 한국어로 작성해줘.
+    text: `위 코디 사진들과 사용자 교정 태그를 보고, 카테고리별 보정 지침을 갱신해줘.
 
 [기본 프롬프트]
 ${VISION_PROMPT}
 
-[기존 보정 지침]
-${current || '없음'}
+[기존 mood 지침]
+${numbered(store.mood)}
+
+[기존 colorTone 지침]
+${numbered(store.colorTone)}
+
+[기존 seasonFeel 지침]
+${numbered(store.seasonFeel)}
 
 조건:
 - 기본 프롬프트의 태그 정의와 판단 규칙을 위배하지 말 것
-- 기존 보정 지침을 참고해 일관성 유지
+- 번호로 언급하지 않은 기존 항목은 그대로 유지되니 다시 쓰지 말 것
+- "수정"은 새로운 사례와 명백히 모순되는 항목에만 적용할 것
+- "추가"는 기존 지침에 없던 새로운 패턴일 때만 적을 것
 - 마크다운(#, **, -, 등) 사용하지 말 것
-- 아래 형식 그대로 반환 (대괄호 포함)
+- mood, colorTone, seasonFeel 세 카테고리 모두 아래와 똑같은 형식으로 빠짐없이 반환 (대괄호 포함)
+- 각 카테고리의 "수정"은 없으면 "없음", 있으면 한 줄에 하나씩 "번호 → 새 문장"
+- 각 카테고리의 "추가"는 없으면 "없음", 있으면 한 줄에 하나씩 새 문장
 
 [분석]
 각 사진에 대해 AI가 어떻게 판단했을지, 사용자가 왜 수정했을지 추론.
 
-[지침]
-4줄 이내, 각 줄은 완성된 문장.`,
+[mood]
+수정:
+추가:
+
+[colorTone]
+수정:
+추가:
+
+[seasonFeel]
+수정:
+추가:`,
   });
 
   const message = await anthropic.messages.create({
@@ -130,9 +171,34 @@ ${current || '없음'}
     message.content[0].type === 'text' ? message.content[0].text.trim() : '';
   if (!fullText) return { ok: false, error: 'AI 응답이 비어 있습니다.' };
 
-  const calibration = fullText.split(/\[지침\]|#{1,3}\s*지침/)[1]?.trim() ?? '';
-  if (!calibration)
-    return { ok: false, error: '지침 섹션을 파싱할 수 없습니다.' };
+  function applyCategory(items: string[], category: CalibrationCategory): string[] {
+    const sectionMatch = fullText.match(
+      new RegExp(`\\[${category}\\]([\\s\\S]*?)(?=\\n\\[|$)`),
+    );
+    const section = sectionMatch?.[1] ?? '';
+    const modBlock = section.match(/수정:([\s\S]*?)추가:/)?.[1] ?? '';
+    const addBlock = section.match(/추가:([\s\S]*)/)?.[1] ?? '';
+
+    const updated = [...items];
+    for (const line of modBlock.split('\n').map((l) => l.trim()).filter(Boolean)) {
+      const m = line.match(/^(\d+)\s*→\s*(.+)$/);
+      if (m) {
+        const idx = parseInt(m[1], 10) - 1;
+        if (idx >= 0 && idx < updated.length) updated[idx] = m[2].trim();
+      }
+    }
+    const additions = addBlock
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && l !== '없음');
+    return [...updated, ...additions];
+  }
+
+  const newStore: CalibrationStore = {
+    mood: applyCategory(store.mood, 'mood'),
+    colorTone: applyCategory(store.colorTone, 'colorTone'),
+    seasonFeel: applyCategory(store.seasonFeel, 'seasonFeel'),
+  };
 
   const logPath = path.join(
     process.cwd(),
@@ -143,7 +209,9 @@ ${current || '없음'}
   )}\n${new Date().toISOString()}\n${'='.repeat(60)}\n${fullText}\n`;
   await writeFile(logPath, logEntry, { flag: 'a', encoding: 'utf-8' });
 
-  await writeFile(CALIBRATION_PATH, calibration, 'utf-8');
+  await writeFile(CALIBRATION_PATH, JSON.stringify(newStore, null, 2), 'utf-8');
+
+  const calibration = formatCalibrationStore(newStore);
 
   try {
     const indexPath = path.join(process.cwd(), 'src/prompts/index.ts');

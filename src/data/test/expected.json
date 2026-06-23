@@ -22,5 +22,284 @@
       "colorTone": "COLORFUL",
       "seasonFeel": ["SPRING", "AUTUMN", "WINTER"]
     }
+  },
+  {
+    "filename": "ce1518aa-27f2-40c7-8138-540b2c1c3f90.jpg",
+    "type": "wardrobe",
+    "expected": {
+      "mood": ["CASUAL", "DATE"],
+      "colorTone": "COOL",
+      "seasonFeel": ["SPRING", "AUTUMN", "SUMMER"]
+    }
+  },
+  {
+    "filename": "646d8b58-ed47-4ae0-afa6-a55079a96ba0.jpg",
+    "type": "wardrobe",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "COOL",
+      "seasonFeel": ["SUMMER"]
+    }
+  },
+  {
+    "filename": "ebedb996-9fe7-4b48-af93-838f7fb914c5.jpeg",
+    "type": "wardrobe",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "MONOCHROME",
+      "seasonFeel": ["SUMMER"]
+    }
+  },
+  {
+    "filename": "9bbb384e-3db6-44ea-b29b-bd5b0584522b.jpeg",
+    "type": "wardrobe",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "NEUTRAL",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "9f3186e2-746b-45e2-ae71-a2363aaddbbf.jpg",
+    "type": "wardrobe",
+    "expected": {
+      "mood": ["CASUAL", "DATE"],
+      "colorTone": "NEUTRAL",
+      "seasonFeel": ["SPRING", "AUTUMN", "SUMMER"]
+    }
+  },
+  {
+    "filename": "676a295d-fab3-426e-b95a-56ce7684f06a.jpeg",
+    "type": "wardrobe",
+    "expected": {
+      "mood": ["CASUAL", "FORMAL"],
+      "colorTone": "MONOCHROME",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "11d190f8-73e0-4274-a598-dd9043ba6e9e.jpg",
+    "type": "wardrobe",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "COLORFUL",
+      "seasonFeel": ["SUMMER"]
+    }
+  },
+  {
+    "filename": "f88e3185-be64-4cdb-bb05-26458b12ff09.jpg",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL", "DATE"],
+      "colorTone": "WARM",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "eff6b40a-699c-4202-9b60-79a39b4f4425.jpg",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL", "DATE"],
+      "colorTone": "WARM",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "926b3780-3974-45a6-9496-a21a62fcaef2.jpg",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL", "DATE"],
+      "colorTone": "NEUTRAL",
+      "seasonFeel": ["SUMMER"]
+    }
+  },
+  {
+    "filename": "af48dd96-214a-4f03-8ba6-4e03e61ad19b.jpg",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "NEUTRAL",
+      "seasonFeel": ["SUMMER"]
+    }
+  },
+  {
+    "filename": "eb6100e6-d573-40ff-a959-9f6d3c1c3d35.jpg",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "MONOCHROME",
+      "seasonFeel": ["SUMMER"]
+    }
+  },
+  {
+    "filename": "c71e4d5f-f2ee-4403-81ed-bb5a39e22024.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["DATE", "FORMAL"],
+      "colorTone": "WARM",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "f09b5c92-8b7e-449c-87b8-b557dda3a743.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["DATE", "CASUAL"],
+      "colorTone": "NEUTRAL",
+      "seasonFeel": ["SUMMER"]
+    }
+  },
+  {
+    "filename": "bf1326c3-533a-4c01-8f9a-460d5f71f78a.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "MONOCHROME",
+      "seasonFeel": ["SUMMER"]
+    }
+  },
+  {
+    "filename": "f36b96d6-db40-41d9-84a8-862a3798969e.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["DATE", "FORMAL"],
+      "colorTone": "WARM",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "e18c91af-45c7-4f9f-800d-2f125fbd2196.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL", "DATE"],
+      "colorTone": "NEUTRAL",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "3e933036-7465-49a2-9bab-fecb5cf015b6.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL", "DATE"],
+      "colorTone": "WARM",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "46d5f2ba-8cb3-449e-bbf8-90500f81c0f4.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["DATE"],
+      "colorTone": "WARM",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "d0a984f6-a619-4df3-8632-55c3c4c4056a.jpg",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "COLORFUL",
+      "seasonFeel": ["SPRING", "AUTUMN", "WINTER"]
+    }
+  },
+  {
+    "filename": "77559dc4-15fc-4c80-990b-bbd33499cdc3.jpg",
+    "type": "taste",
+    "expected": {
+      "mood": ["FORMAL"],
+      "colorTone": "WARM",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "4681b179-ff24-48b7-8ecb-9ea66ae3ab5c.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL", "FORMAL"],
+      "colorTone": "NEUTRAL",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "a4e93c15-6dbf-42b8-9b20-d9062d3c3491.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["FORMAL"],
+      "colorTone": "WARM",
+      "seasonFeel": ["SPRING", "AUTUMN"]
+    }
+  },
+  {
+    "filename": "e0e1fe3a-d0d6-447e-87fd-f50db5eee761.PNG",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "NEUTRAL",
+      "seasonFeel": ["SUMMER"]
+    }
+  },
+  {
+    "filename": "37f3ba0a-755b-4343-910b-5384d7437712.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "MONOCHROME",
+      "seasonFeel": ["AUTUMN", "SPRING"]
+    }
+  },
+  {
+    "filename": "625d83bb-63a8-4768-918f-f5f3fed1fb54.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL", "DATE"],
+      "colorTone": "COLORFUL",
+      "seasonFeel": ["WINTER"]
+    }
+  },
+  {
+    "filename": "405e476c-d90a-4025-bb96-fe3e902e82a5.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "COLORFUL",
+      "seasonFeel": ["SUMMER"]
+    }
+  },
+  {
+    "filename": "02aa5f45-691e-464a-864a-64ae357a2242.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL"],
+      "colorTone": "MONOCHROME",
+      "seasonFeel": ["AUTUMN", "SPRING"]
+    }
+  },
+  {
+    "filename": "b755daca-3190-4939-bcfb-26502361a0ed.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["FORMAL"],
+      "colorTone": "MONOCHROME",
+      "seasonFeel": ["AUTUMN", "SPRING"]
+    }
+  },
+  {
+    "filename": "59a55ac6-4809-43a9-81ee-3edfad83fe18.JPG",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL", "DATE"],
+      "colorTone": "WARM",
+      "seasonFeel": ["AUTUMN", "SPRING"]
+    }
+  },
+  {
+    "filename": "5d5803b4-84cf-4d86-aff0-7ad2b3314639.jpg",
+    "type": "taste",
+    "expected": {
+      "mood": ["CASUAL", "DATE"],
+      "colorTone": "COLORFUL",
+      "seasonFeel": ["AUTUMN", "SPRING", "SUMMER"]
+    }
   }
 ]

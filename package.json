@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:vision": "npx tsx scripts/test-vision.ts",
-    "test:vision:repeat": "npx tsx scripts/test-vision.ts --repeat=3"
+    "test:vision": "npx tsx --env-file=.env.local scripts/test-vision.ts",
+    "test:vision:repeat": "npx tsx --env-file=.env.local scripts/test-vision.ts --repeat=5"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
